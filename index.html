@@ -297,12 +297,27 @@ tbody tr.sel{background:var(--pruT)}
     <label class="lbl">From temperature (°C)<input id="aFrom" inputmode="decimal" placeholder="start of window"></label>
     <label class="lbl">Bin<select id="aBin"><option value="30">30 s</option><option value="60" selected>1 min</option><option value="120">2 min</option><option value="300">5 min</option></select></label>
     <label class="lbl">Circle diameter (mm), optional<input id="aMM" inputmode="decimal" placeholder="for mm"></label>
+    <label class="lbl">Activity scale<select id="aLog"><option value="lin">Linear</option><option value="log">log2(1 + x)</option></select></label>
     <button id="aGo">Update</button><button id="aCopy">Copy activity</button><button id="aCsv" hidden>Download activity CSV</button>
   </div>
   <p class="mut" id="aMsg"></p>
   <div class="heat" id="heatFig"><canvas id="heat" aria-label="Activity heatmap"></canvas></div>
-  <h3>Mean activity of flies still standing (one line per group once wells are labelled)</h3>
-  <div class="fig" id="actFig" style="min-height:260px"><svg id="actCurve" role="img" aria-label="Mean activity versus temperature"></svg></div>
+  <h3>Flies still standing: mean ± SE against temperature</h3>
+  <p class="mut">Each point averages the flies of a group that are still standing, over a sliding window one bin wide (moved a quarter bin at a time). The band is ± SE; hover a point for the number of flies. Flies without a knockdown call are left out.</p>
+  <div class="fig" id="actFig" style="min-height:280px"><svg id="actCurve" role="img" aria-label="Mean activity versus temperature"></svg></div>
+  <h3>Activity before knockdown</h3>
+  <p class="mut">Each fly lined up on its own knockdown (0 = knockdown); activity over the preceding 30 s, mean ± SE per group. Shows how activity changes in the run-up to collapse, whatever the temperature at which it happens.</p>
+  <div class="fig" id="alFig" style="min-height:280px"><svg id="alCurve" role="img" aria-label="Activity aligned to knockdown"></svg></div>
+  <h3>One value per fly</h3>
+  <div class="actctl">
+    <label class="lbl" style="width:260px">Measure<select id="pmMetric"><option value="win">Mean activity in a temperature window</option><option value="peak">Peak activity (best 1-min window)</option><option value="tpeak">Temperature at peak activity</option></select></label>
+    <label class="lbl">Window from (°C)<input id="pmLo" inputmode="decimal"></label>
+    <label class="lbl">to (°C)<input id="pmHi" inputmode="decimal"></label>
+    <button id="pmGo">Update</button><button id="pmCopy">Copy per-fly table</button><button id="pmCsv" hidden>Download per-fly CSV</button>
+  </div>
+  <p class="mut" id="pmMsg">Activity is counted only while the fly is standing. Dots = flies, diamond = mean ± SE.</p>
+  <div class="fig" id="pmFig" style="min-height:340px"><svg id="pmPlot" role="img" aria-label="Per-fly activity by group"></svg></div>
+  <div class="scroll"><table id="pmTbl"></table></div>
   </div>
 </section>
 
@@ -590,14 +605,14 @@ $('#tB10').addEventListener('click', () => stepBy(-10)); $('#tB1').addEventListe
 $('#tBf').addEventListener('click', () => stepBy(-frameDt())); $('#tFf').addEventListener('click', () => stepBy(frameDt()));
 $('#tF1').addEventListener('click', () => stepBy(1)); $('#tF10').addEventListener('click', () => stepBy(10));
 $('#tSeek').addEventListener('input', e => { if (S.phase === 'setup' || S.phase === 'review') vid.currentTime = +e.target.value; });
-function onFrameShown() {
+function onFrameShown(ev) {
   if (S.phase === 'running') return;
   const t = vid.currentTime, tp = tempAt(t);
   $('#tRead').textContent = fmtT(t) + (fin(tp) ? ' · ' + tp.toFixed(2) + ' °C' : '');
   const sk = $('#tSeek'); sk.max = S.dur || 1; if (document.activeElement !== sk) sk.value = t;
   $('#tPlay').textContent = vid.paused ? 'Play' : 'Pause';
   draw(); drawZoom(); drawTrace();
-  if (S.phase === 'setup' && vid.paused) previewDetect();
+  if (S.phase === 'setup' && vid.paused && (!ev || ev.type === 'seeked')) previewDetect();
 }
 ['seeked', 'timeupdate', 'pause', 'play'].forEach(k => vid.addEventListener(k, onFrameShown));
 if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
@@ -693,6 +708,13 @@ function rampClean() {
     R[i].ok = Math.abs(R[i].temp - (mT + sl * (R[i].t - mt))) <= Math.max(0.3, 4 * median(res));
   }
   S.rampOK = R.filter(r => r.ok);
+  // The plate temperature wobbles around the ramp; a smoothed, non-decreasing version is used for axes and bins.
+  const K = S.rampOK; S.rampSm = K.map(r => {
+    const nb = K.filter(q => Math.abs(q.t - r.t) <= 60); const mt = nb.reduce((a, q) => a + q.t, 0) / nb.length, mT = nb.reduce((a, q) => a + q.temp, 0) / nb.length;
+    let sxx = 0, sxy = 0; for (const q of nb) { sxx += (q.t - mt) ** 2; sxy += (q.t - mt) * (q.temp - mT); }
+    return { t: r.t, temp: mT + (sxx > 0 ? sxy / sxx : 0) * (r.t - mt) };
+  });
+  for (let i = 1; i < S.rampSm.length; i++) if (S.rampSm[i].temp < S.rampSm[i - 1].temp) S.rampSm[i].temp = S.rampSm[i - 1].temp;
 }
 function interpRamp(t, key) {
   const R = S.rampOK.filter(r => r[key] != null); if (!R.length) return null;
@@ -701,6 +723,7 @@ function interpRamp(t, key) {
   const a = R[lo], b = R[hi]; return a[key] + (b[key] - a[key]) * (t - a.t) / (b.t - a.t);
 }
 const tempAt = t => S.rampOK.length ? interpRamp(t, 'temp') : null;
+const tempSm = t => { const R = S.rampSm || []; if (!R.length) return null; if (t <= R[0].t) return R[0].temp; const L = R[R.length - 1]; if (t >= L.t) return L.temp; let lo = 0, hi = R.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (R[m].t <= t) lo = m; else hi = m; } const a = R[lo], b = R[hi]; return a.temp + (b.temp - a.temp) * (t - a.t) / (b.t - a.t); };
 
 /* ---------- analysis: setup ---------- */
 function makeWell(w, s, ww, wh) {
@@ -723,15 +746,13 @@ async function buildPreviewBg() {
   if (!S.vw || PV.busy) return; PV.busy = true; PV.bg = null; PV.dets = null;
   const s = Math.min(1, 1280 / S.vw), ww = Math.round(S.vw * s), wh = Math.round(S.vh * s), K = 32, N = ww * wh;
   const c = document.createElement('canvas'); c.width = ww; c.height = wh; const g = c.getContext('2d', { willReadFrequently: true });
-  const stack = new Uint8Array(K * N), url = S.url;
+  const bg = new Uint8Array(N), url = S.url;
   $('#detMsg').textContent = 'Checking which wells have a fly…';
   for (let k = 0; k < K; k++) {
     if (S.url !== url || S.phase !== 'setup') { PV.busy = false; return; }
     const d = await withHelper(async () => { await seekTo(hv, (k + 0.5) * S.dur / K); g.drawImage(hv, 0, 0, ww, wh); return g.getImageData(0, 0, ww, wh).data; });
-    for (let i = 0, o = k * N; i < N; i++) stack[o + i] = (d[4 * i] * 77 + d[4 * i + 1] * 150 + d[4 * i + 2] * 29) >> 8;
+    for (let i = 0; i < N; i++) { const v = (d[4 * i] * 77 + d[4 * i + 1] * 150 + d[4 * i + 2] * 29) >> 8; if (v > bg[i]) bg[i] = v; }
   }
-  const bg = new Uint8Array(N), sc = new Uint8Array(K), q = K - 1;
-  for (let i = 0; i < N; i++) { for (let k = 0; k < K; k++) sc[k] = stack[k * N + i]; bg[i] = kth(sc, K, q); if ((i & 65535) === 0) await idle(); }
   Object.assign(PV, { bg, ww, wh, s, busy: false });
   previewDetect();
 }
@@ -881,7 +902,7 @@ function pass2(t0, t1) {
   return new Promise((resolve, reject) => {
     const hasRVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
     S.tr = newTracks(Math.ceil((t1 - t0) * Math.min(S.fps || 30, 30) * 1.05) + 64, S.W.W.length);
-    let armed = false, lastT = -1, nextOcr = t0, done = false, rate = S.set.speed, chkWall = performance.now(), chkN = 0, chkT = t0, wall0 = performance.now(), lastFrameWall = performance.now(), frames = 0, minDt = Infinity;
+    let lastPaint = 0, armed = false, lastT = -1, nextOcr = t0, done = false, rate = Math.min(8, S.set.speed), chkWall = performance.now(), chkN = 0, chkT = t0, wall0 = performance.now(), lastFrameWall = performance.now(), frames = 0, minDt = Infinity;
     const setRate = r => { try { vid.playbackRate = r; } catch (e) { try { vid.playbackRate = 4; rate = 4; } catch (e2) {} } };
     const finish = ok => { if (done) return; done = true; clearInterval(watch); vid.pause(); document.removeEventListener('visibilitychange', vis); vid.removeEventListener('ended', onEnd); S.live = null; if (fin(minDt) && minDt > 0) S.fps = clamp(Math.round(1 / minDt), 1, 240); ok ? resolve() : reject('cancel'); };
     const onEnd = () => finish(true);
@@ -899,7 +920,7 @@ function pass2(t0, t1) {
           nextOcr = t + S.set.ocrEvery;
         }
         processFrame(t, null); lastT = t; frames++; lastFrameWall = performance.now();
-        if (frames % 4 === 0) draw();
+        if (performance.now() - lastPaint > 250) { lastPaint = performance.now(); draw(); }
       }
     };
     // Grab the exact presented frame first: the video keeps playing while we work on it.
@@ -912,9 +933,9 @@ function pass2(t0, t1) {
       if (done) return;
       const nowW = performance.now(), p = clamp((lastT - t0) / (t1 - t0), 0, 1);
       if (nowW - chkWall > 1500 && armed && !document.hidden) {
-        const spv = (S.tr.n - chkN) / Math.max(1e-3, lastT - chkT), target = Math.min(S.fps || 5, 4) * 0.55;
+        const spv = (S.tr.n - chkN) / Math.max(1e-3, lastT - chkT), target = Math.min(S.fps || 5, 1.2);
         if (lastT > chkT && spv < target && rate > 1) { rate = Math.max(1, rate * 0.7); setRate(rate); }
-        else if (spv > Math.min(S.fps || 5, 5) * 0.85 && rate < S.set.speed) { rate = Math.min(S.set.speed, rate * 1.3); setRate(rate); }
+        else if (spv > Math.min(S.fps || 5, 2) && rate < S.set.speed) { rate = Math.min(S.set.speed, rate * 1.3); setRate(rate); }
         chkWall = nowW; chkN = S.tr.n; chkT = lastT;
         if (armed && !vid.paused && nowW - lastFrameWall > 5000) { vid.play().catch(() => {}); }
       }
@@ -1060,7 +1081,7 @@ function eff(r) {
     if (o) { e.frame = o.frame; e.tmin = o.tmin; e.img = o.img; }
     if (e.frame == null && S.rampOK.length) { const f = interpRamp(t, 'frame'); e.frame = f != null ? Math.round(f) : null; const tm = interpRamp(t, 'tmin'); e.tmin = tm != null ? +tm.toFixed(2) : null; }
     if (r.manTemp && Math.abs(r.manTemp.t - t) < 1e-3) { e.temp = r.manTemp.v; e.tempSrc = 'typed'; }
-    else if (o && o.temp != null && !(fin(ti) && Math.abs(o.temp - ti) > 0.25)) { e.temp = o.temp; e.tempSrc = 'overlay'; }
+    else if (o && o.temp != null && !(fin(ti) && Math.abs(o.temp - ti) > 1.0)) { e.temp = o.temp; e.tempSrc = 'overlay'; }
     else if (fin(ti)) { e.temp = ti; e.tempSrc = 'ramp'; if (o && o.temp != null) e.flags.push('temp_check'); }
   } else if (status === 'active') { const te = tempAt(S.winUsed[1]); e.temp = fin(te) ? te : null; e.tempSrc = 'end'; }
   return e;
@@ -1089,7 +1110,7 @@ async function analyse() {
   if (!(S.phase === 'setup' || S.phase === 'review')) return;
   readSet(); S.cancel = false; S.res = {}; S.ramp = []; S.rampOK = []; S.ocrAt = {}; S.thumbs = {}; S.sel = null; S.tr = null;
   S.winUsed = S.win.slice(); const [t0, t1] = S.winUsed;
-  vid.pause(); setPhase('running'); progress('Preparing', 0, '');
+  vid.pause(); setPhase('running'); progress('Preparing', 0, ''); const runStart = performance.now();
   OCR.init();
   try {
     buildWork();
@@ -1104,6 +1125,7 @@ async function analyse() {
     setPhase('review'); renderReview();
     const first = S.wells.find(w => eff(S.res[w.id]).status === 'kd') || S.wells.find(w => w.on);
     if (first) selectWell(first.id, true);
+    const secs = Math.round((performance.now() - runStart) / 1000); $('#expMsg').textContent = 'Analysis took ' + (secs >= 60 ? Math.floor(secs / 60) + ' min ' : '') + (secs % 60) + ' s for ' + fmtT(t1 - t0).replace(/\.\d$/, '') + ' of video.';
     window.__kdDone = true;
   } catch (e) {
     if (e !== 'cancel') { console.error(e); $('#loadMsg').textContent = 'Analysis stopped: ' + (e && e.message ? e.message : e); }
@@ -1214,7 +1236,7 @@ function drawTrace() {
   g.save(); g.translate(10, pt + ph / 2); g.rotate(-Math.PI / 2); g.textAlign = 'center'; g.fillText('body lengths / s', 0, 0); g.restore();
   g.textAlign = 'center'; g.textBaseline = 'top';
   const nt = W < 360 ? 3 : 5;
-  for (let i = 0; i <= nt; i++) { const t = t0 + (t1 - t0) * i / nt; g.fillText(fmtT(t).replace(/\.\d$/, ''), clamp(X(t), pl + 14, W - 18), pt + ph + 4); const tp = tempAt(t); if (fin(tp)) { g.textBaseline = 'bottom'; g.fillText(tp.toFixed(1) + '°', clamp(X(t), pl + 14, W - 18), pt - 3); g.textBaseline = 'top'; } }
+  for (let i = 0; i <= nt; i++) { const t = t0 + (t1 - t0) * i / nt; g.fillText(fmtT(t).replace(/\.\d$/, ''), clamp(X(t), pl + 14, W - 18), pt + ph + 4); const tp = tempSm(t); if (fin(tp)) { g.textBaseline = 'bottom'; g.fillText(tp.toFixed(1) + '°', clamp(X(t), pl + 14, W - 18), pt - 3); g.textBaseline = 'top'; } }
   if (r && r.spd && S.tr) {
     const t = S.tr.t, n = S.tr.n, cols = Math.max(1, Math.floor(pw)), mxv = new Float32Array(cols).fill(-1);
     for (let i = 0; i < n; i++) { const v = r.spd[i]; if (v !== v) continue; const ci = clamp(Math.floor((t[i] - t0) / (t1 - t0) * cols), 0, cols - 1); if (v > mxv[ci]) mxv[ci] = v; }
@@ -1252,7 +1274,7 @@ function rowsOut() {
   return S.wells.map(w => {
     const e = eff(S.res[w.id]);
     const L = labelOf(w.id);
-    return { well: w.id, row: ROWN[w.r], col: w.c + 1, genotype: L.genotype, treatment: L.treatment, sex: L.sex, status: STATUS[e.status], temp: e.status === 'kd' && fin(e.temp) ? e.temp.toFixed(2) : '', end: e.status === 'active' && fin(e.temp) ? e.temp.toFixed(2) : '',
+    return { well: w.id, row: ROWN[w.r], col: w.c + 1, genotype: L.genotype, treatment: L.treatment, sex: L.sex, status: STATUS[e.status], temp: e.status === 'kd' && fin(e.temp) ? e.temp.toFixed(2) : '', rampT: e.status === 'kd' && fin(e.t) && fin(tempSm(e.t)) ? tempSm(e.t).toFixed(2) : '', end: e.status === 'active' && fin(e.temp) ? e.temp.toFixed(2) : '',
       vt: fin(e.t) ? e.t.toFixed(2) : '', vtf: fin(e.t) ? fmtT(e.t) : '', frame: e.status === 'kd' && e.frame != null ? e.frame : '', tmin: e.status === 'kd' && e.tmin != null ? e.tmin : '',
       src: e.status === 'kd' ? (e.src === 'manual' ? 'by hand' : 'automatic') + (e.tempSrc ? ', temp from ' + e.tempSrc : '') : '', flags: e.flags.filter(f => f !== 'manual').map(f => FLAGTXT[f] || f).join('; '), e };
   });
@@ -1295,12 +1317,12 @@ function drawCurve() {
 
 /* ---------- export ---------- */
 let DL = null;
-function initDownloads() { try { if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { DL = d || null; $('#bCsv').hidden = !DL; $('#aCsv').hidden = !DL; $('#gCsv').hidden = !DL; }).catch(() => {}); } catch (e) {} }
-$('#bCsv').hidden = false; $('#aCsv').hidden = false; $('#gCsv').hidden = false;
+function initDownloads() { try { if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { DL = d || null; $('#bCsv').hidden = !DL; $('#aCsv').hidden = !DL; $('#gCsv').hidden = !DL; $('#pmCsv').hidden = !DL; }).catch(() => {}); } catch (e) {} }
+$('#bCsv').hidden = false; $('#aCsv').hidden = false; $('#gCsv').hidden = false; $('#pmCsv').hidden = false;
 const csvCell = v => { const s = String(v == null ? '' : v); return /[",\n\t]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 function resultsMatrix() {
-  const head = ['well', 'row', 'column', 'genotype', 'treatment', 'sex', 'status', 'knockdown_temp_C', 'temp_at_end_if_alive_C', 'video_time_s', 'video_time', 'frame', 't_min', 'method', 'check'];
-  return [head].concat(rowsOut().map(r => [r.well, r.row, r.col, r.genotype, r.treatment, r.sex, r.status, r.temp, r.end, r.vt, r.vtf, r.frame, r.tmin, r.src, r.flags]));
+  const head = ['well', 'row', 'column', 'genotype', 'treatment', 'sex', 'status', 'knockdown_temp_C', 'smoothed_ramp_temp_C', 'temp_at_end_if_alive_C', 'video_time_s', 'video_time', 'frame', 't_min', 'method', 'check'];
+  return [head].concat(rowsOut().map(r => [r.well, r.row, r.col, r.genotype, r.treatment, r.sex, r.status, r.temp, r.rampT, r.end, r.vt, r.vtf, r.frame, r.tmin, r.src, r.flags]));
 }
 const baseName = () => (S.file ? S.file.name.replace(/\.[^.]+$/, '') : 'video');
 async function copyText(txt, msgEl) {
@@ -1323,12 +1345,15 @@ $('#bCsv').addEventListener('click', () => saveCsv(baseName() + '_knockdown.csv'
 let ACT = null;
 function readAct() {
   const f = parseFloat(String($('#aFrom').value).replace(',', '.')), mm = parseFloat(String($('#aMM').value).replace(',', '.'));
-  S.act = { from: fin(f) ? f : null, bin: +$('#aBin').value || 60, mm: fin(mm) && mm > 0 ? mm : null };
+  S.act = { from: fin(f) ? f : null, bin: +$('#aBin').value || 60, mm: fin(mm) && mm > 0 ? mm : null, log: $('#aLog').value === 'log' };
 }
+$('#aLog').addEventListener('change', () => { readAct(); drawActivity(); });
+['pmMetric'].forEach(id => $('#' + id).addEventListener('change', drawActivity));
+$('#pmGo').addEventListener('click', drawActivity);
 $('#aGo').addEventListener('click', () => { readAct(); computeActivity(); });
 ['aBin'].forEach(id => $('#' + id).addEventListener('change', () => { readAct(); computeActivity(); }));
 function timeAtTemp(c) {
-  const R = S.rampOK; if (!R.length) return null;
+  const R = S.rampSm || []; if (!R.length) return null;
   for (let i = 0; i < R.length; i++) if (R[i].temp >= c) return i === 0 ? R[0].t : R[i - 1].t + (c - R[i - 1].temp) / ((R[i].temp - R[i - 1].temp) || 1) * (R[i].t - R[i - 1].t);
   return null;
 }
@@ -1340,81 +1365,177 @@ function computeActivity() {
   if (A.from != null) { const tt = timeAtTemp(A.from); if (tt == null) { msg.textContent = 'The plate never reaches ' + A.from + ' °C in the analysed part of the video.'; drawActivity(); return; } ts = Math.max(t0, tt); }
   const nb = Math.floor((t1 - ts) / bin);
   if (nb < 1) { msg.textContent = 'Less than one bin after the start point.'; drawActivity(); return; }
-  const tr = S.tr, t = tr.t, n = tr.n, BL = S.BL, nsec = nb * bin, wells = [];
+  const tr = S.tr, t = tr.t, n = tr.n, BL = S.BL, nall = Math.floor(t1 - t0), off = Math.round(ts - t0), wells = [];
   const mmPerPx = A.mm ? A.mm / (2 * S.L.radius * S.vw * S.W.s) : null;
   S.W.W.forEach((w, k) => {
     const e = eff(S.res[w.id]); if (!['kd', 'active', 'never'].includes(e.status)) return;
-    const T = tr.w[k], px = new Float32Array(nsec).fill(NaN), py = new Float32Array(nsec).fill(NaN);
-    let i = 0; while (i < n && t[i] < ts) i++;
-    const xs = [], ys = [];
-    for (let s = 0; s < nsec; s++) {
-      xs.length = 0; ys.length = 0; const end = ts + s + 1;
-      while (i < n && t[i] < end) { if (T.x[i] === T.x[i]) { xs.push(T.x[i]); ys.push(T.y[i]); } i++; }
-      if (xs.length) { px[s] = median(xs); py[s] = median(ys); }
+    // positions once per second (median of that second's samples), then walking speed per second in body lengths/s;
+    // gaps of up to 5 s are bridged, speeds under 0.2 BL/s count as 0 (twitching, jitter)
+    const T = tr.w[k], px = new Float32Array(nall).fill(NaN), py = new Float32Array(nall).fill(NaN), sp = new Float32Array(nall).fill(NaN);
+    let i = 0; const xs = [], ys = [];
+    for (let s2 = 0; s2 < nall; s2++) {
+      xs.length = 0; ys.length = 0; const end = t0 + s2 + 1;
+      while (i < n && t[i] < end) { if (T.x[i] === T.x[i] && t[i] >= t0) { xs.push(T.x[i]); ys.push(T.y[i]); } i++; }
+      if (xs.length) { px[s2] = median(xs); py[s2] = median(ys); }
+    }
+    let q = -1;
+    for (let s2 = 0; s2 < nall; s2++) {
+      if (px[s2] !== px[s2]) continue;
+      if (q >= 0 && s2 - q <= 5) { const gp = s2 - q, v = Math.hypot(px[s2] - px[q], py[s2] - py[q]) / BL / gp; for (let u = q + 1; u <= s2; u++) sp[u] = v > 0.2 ? v : 0; }
+      q = s2;
     }
     const dist = new Float32Array(nb), pct = new Float32Array(nb).fill(NaN);
     for (let bI = 0; bI < nb; bI++) {
-      let dsum = 0, mov = 0, val = 0;
-      for (let s = bI * bin + 1; s < (bI + 1) * bin; s++) { if (px[s] !== px[s] || px[s - 1] !== px[s - 1]) continue; const st = Math.hypot(px[s] - px[s - 1], py[s] - py[s - 1]) / BL; val++; if (st > 0.2) { dsum += st; mov++; } }
-      dist[bI] = val ? dsum * (bin - 1) / val : NaN; pct[bI] = val ? 100 * mov / val : NaN;
+      let sum = 0, val = 0, mov = 0;
+      for (let u = off + bI * bin; u < off + (bI + 1) * bin && u < nall; u++) { const v = sp[u]; if (v === v) { sum += v; val++; if (v > 0) mov++; } }
+      dist[bI] = val >= bin * 0.3 ? sum / val * bin : NaN; pct[bI] = val >= bin * 0.3 ? 100 * mov / val : NaN;
     }
-    wells.push({ id: w.id, kd: e.status === 'kd' ? e.t : null, dist, pct });
+    wells.push({ id: w.id, kd: e.status === 'kd' ? e.t : null, status: e.status, dist, pct, sp });
   });
   const tempMid = [], tempStart = [];
-  for (let bI = 0; bI < nb; bI++) { tempStart.push(tempAt(ts + bI * bin)); tempMid.push(tempAt(ts + (bI + 0.5) * bin)); }
-  ACT = { ts, bin, nb, wells, tempMid, tempStart, mmPerPx, flyMM: mmPerPx ? BL * mmPerPx : null };
+  for (let bI = 0; bI < nb; bI++) { tempStart.push(tempSm(ts + bI * bin)); tempMid.push(tempSm(ts + (bI + 0.5) * bin)); }
+  const RS = S.rampSm || [], slope = RS.length > 1 ? (RS[RS.length - 1].temp - RS[0].temp) / Math.max(1, RS[RS.length - 1].t - RS[0].t) * 60 : null;
+  ACT = { t0, ts, bin, nb, wells, tempMid, tempStart, mmPerPx, flyMM: mmPerPx ? BL * mmPerPx : null, slope };
+  if (!$('#pmLo').value && fin(tempStart[0])) { $('#pmLo').value = tempStart[0].toFixed(1); $('#pmHi').value = (tempStart[0] + 0.5).toFixed(1); }
   msg.textContent = 'Starting at ' + fmtT(ts) + (fin(tempStart[0]) ? ' (' + tempStart[0].toFixed(2) + ' °C)' : '') + ', ' + nb + ' bins of ' + (bin >= 60 ? bin / 60 + ' min' : bin + ' s') + ' for ' + wells.length + ' flies' + (ACT.flyMM ? '. With that circle size a fly measures ≈ ' + ACT.flyMM.toFixed(1) + ' mm' : '') + '.';
   drawActivity();
+}
+function actGroups() {
+  const lab = hasLabels(), keyOf = id => { if (!lab) return 'All flies'; const L = labelOf(id); return [L.genotype, L.treatment, L.sex === 'male' ? '♂' : L.sex === 'female' ? '♀' : L.sex].filter(Boolean).join(' · ') || 'Unlabelled'; };
+  const keys = [...new Set(ACT.wells.map(w => keyOf(w.id)))].sort(), members = {};
+  for (const k of keys) members[k] = ACT.wells.filter(w => keyOf(w.id) === k).sort((a, b) => (fin(a.kd) ? a.kd : 1e12) - (fin(b.kd) ? b.kd : 1e12) || a.id.localeCompare(b.id));
+  return { keys, members, color: k => PAL[keys.indexOf(k) % PAL.length] };
 }
 function drawActivity() {
   const c = $('#heat'), fig = $('#heatFig');
   if (!c || S.phase !== 'review') return;
   const W = fig.clientWidth, dpr = devicePixelRatio || 1;
-  if (!ACT || !ACT.wells.length) { fig.style.minHeight = '40px'; c.width = 1; c.height = 1; $('#actCurve').innerHTML = ''; return; }
-  const rows = ACT.wells.length, rh = clamp(Math.floor(320 / rows), 10, 22), pl = 40, pt = 22, pb = 26, H = pt + rows * rh + pb;
+  if (!ACT || !ACT.wells.length) { fig.style.minHeight = '40px'; c.width = 1; c.height = 1; drawActivityCharts(); return; }
+  const G = actGroups(), labelled = G.keys.length > 1 || G.keys[0] !== 'All flies';
+  const rows = ACT.wells.length, rh = clamp(Math.floor(340 / rows), 10, 20), gh = labelled ? 20 : 0, gap = labelled ? 8 : 0, pl = 40, pt = 22, pb = 26;
+  const H = pt + rows * rh + G.keys.length * (gh + gap) + pb;
   fig.style.minHeight = H + 'px'; c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
   const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-  const mut = cssColor('--mut'), car = cssColor('--car'), bgc = cssColor('--bg').match(/\d+/g).map(Number), dark = bgc[0] + bgc[1] + bgc[2] < 200;
+  const mut = cssColor('--mut'), ink = cssColor('--ink'), bgc = cssColor('--bg').match(/\d+/g).map(Number), dark = bgc[0] + bgc[1] + bgc[2] < 200;
   const pw = W - pl - 8, cw = pw / ACT.nb, all = []; ACT.wells.forEach(w => w.dist.forEach(v => { if (fin(v)) all.push(v); }));
   const vmax = Math.max(0.5, all.sort((a, b) => a - b)[Math.floor(all.length * 0.95)] || 1);
-  const lo = dark ? [22, 26, 34] : [238, 242, 247], hi = dark ? [134, 187, 255] : [11, 79, 138];
-  g.font = '11px Literata, Georgia, serif'; g.textBaseline = 'middle';
-  ACT.wells.forEach((w, ri) => {
-    const y = pt + ri * rh; g.fillStyle = mut; g.textAlign = 'right'; g.fillText(w.id, pl - 6, y + rh / 2);
-    for (let b = 0; b < ACT.nb; b++) {
-      const v = w.dist[b]; if (!fin(v)) { g.fillStyle = dark ? '#000' : '#fff'; } else { const f = clamp(v / vmax, 0, 1) ** 0.7; g.fillStyle = 'rgb(' + lo.map((l, i) => Math.round(l + (hi[i] - l) * f)).join(',') + ')'; }
-      g.fillRect(pl + b * cw, y + 1, Math.ceil(cw), rh - 2);
+  const lo = dark ? [26, 30, 38] : [240, 242, 246];
+  const rgbOf = hex => { const n = parseInt(hex.slice(1), 16), c3 = [n >> 16, (n >> 8) & 255, n & 255]; return dark ? c3.map(v => Math.round(v + (255 - v) * 0.35)) : c3; };
+  g.font = '11px Literata, Georgia, serif';
+  let y = pt;
+  G.keys.forEach((k, gi) => {
+    const hi = rgbOf(G.color(k));
+    if (labelled) { g.fillStyle = 'rgb(' + hi.join(',') + ')'; g.font = '600 13px Literata, Georgia, serif'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(k + '  (n = ' + G.members[k].length + ')', pl, y + gh / 2 + 2); g.font = '11px Literata, Georgia, serif'; y += gh; }
+    for (const w of G.members[k]) {
+      g.fillStyle = mut; g.textAlign = 'right'; g.textBaseline = 'middle'; g.fillText(w.id, pl - 6, y + rh / 2);
+      for (let b = 0; b < ACT.nb; b++) {
+        const v = w.dist[b]; if (!fin(v)) continue;
+        const f = S.act.log ? clamp(Math.log2(1 + v) / Math.log2(1 + vmax), 0, 1) : clamp(v / vmax, 0, 1) ** 0.7; g.fillStyle = 'rgb(' + lo.map((l, i) => Math.round(l + (hi[i] - l) * f)).join(',') + ')';
+        g.fillRect(pl + b * cw, y + 1, Math.ceil(cw), rh - 2);
+      }
+      if (fin(w.kd) && w.kd >= ACT.ts) { const x = pl + (w.kd - ACT.ts) / ACT.bin * cw; if (x <= pl + pw) { g.fillStyle = ink; g.fillRect(x - 1, y, 3, rh); } }
+      y += rh;
     }
-    if (fin(w.kd) && w.kd >= ACT.ts) { const x = pl + (w.kd - ACT.ts) / ACT.bin * cw; if (x <= pl + pw) { g.fillStyle = car; g.fillRect(x - 1, y, 3, rh); } }
+    y += gap;
   });
   g.fillStyle = mut; g.textAlign = 'center'; g.textBaseline = 'top';
-  const step = Math.max(1, Math.ceil(ACT.nb / (W < 520 ? 4 : 10)));
-  for (let b = 0; b < ACT.nb; b += step) { const tp = ACT.tempStart[b]; g.fillText(fin(tp) ? tp.toFixed(1) + '°' : fmtT(ACT.ts + b * ACT.bin), clamp(pl + b * cw, pl + 12, W - 16), pt + rows * rh + 6); }
-  g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText('Darker = more walking (scale tops out at ' + vmax.toFixed(1) + ' body lengths per bin). Red tick = knockdown.', pl, pt - 6);
-  // mean curve of standing flies, one line per labelled group
-  const svg = $('#actCurve'), SWd = svg.clientWidth, SH = svg.clientHeight; if (!SWd || !SH) return;
-  const keyOf = id => { const L = labelOf(id); return [L.genotype, L.treatment, L.sex].filter(Boolean).join(' · ') || 'All flies'; };
-  const keys = hasLabels() ? [...new Set(ACT.wells.map(w => keyOf(w.id)))].sort() : ['All flies'];
-  const series = keys.map(k => {
-    const ws = ACT.wells.filter(w => keys.length === 1 || keyOf(w.id) === k), pts = [];
-    for (let b = 0; b < ACT.nb; b++) { const be = ACT.ts + (b + 1) * ACT.bin, vals = ws.filter(w => !(fin(w.kd) && w.kd < be)).map(w => w.dist[b]).filter(fin); if (vals.length) pts.push([fin(ACT.tempMid[b]) ? ACT.tempMid[b] : b, vals.reduce((a, x) => a + x, 0) / vals.length, vals.length]); }
-    return { k, pts };
-  }).filter(sr => sr.pts.length);
-  if (!series.length) { svg.innerHTML = ''; return; }
-  const useT = ACT.tempMid.every(fin), allp = series.flatMap(sr => sr.pts), x0 = Math.min(...allp.map(p => p[0])), x1 = Math.max(...allp.map(p => p[0])), ym = Math.max(...allp.map(p => p[1]), 0.5);
-  const qpl = 46, qpr = series.length > 1 ? 170 : 14, qpt = 14, qpb = 34, qw = SWd - qpl - qpr, qh = SH - qpt - qpb, X = v => qpl + (x1 > x0 ? (v - x0) / (x1 - x0) : 0.5) * qw, Y = v => qpt + qh - v / ym * qh;
-  const xt = useT ? axisTicks(x0, x1, SWd < 520 ? 4 : 8) : [];
-  const unit = ACT.bin >= 60 ? (ACT.bin === 60 ? 'per min' : 'per ' + ACT.bin / 60 + ' min') : 'per ' + ACT.bin + ' s';
-  let o = '<g stroke="var(--line)">' + [0, 0.5, 1].map(f => '<line x1="' + qpl + '" x2="' + (qpl + qw) + '" y1="' + Y(ym * f) + '" y2="' + Y(ym * f) + '"/>').join('') + '</g>' +
-    '<g fill="var(--mut)" font-size="12" text-anchor="end">' + [0, 0.5, 1].map(f => '<text x="' + (qpl - 6) + '" y="' + (Y(ym * f) + 4) + '">' + (ym * f).toFixed(1) + '</text>').join('') + '</g>' +
-    '<g fill="var(--mut)" font-size="12" text-anchor="middle">' + xt.map(v => '<text x="' + X(v) + '" y="' + (qpt + qh + 18) + '">' + v.toFixed(v % 1 ? 1 : 0) + '</text>').join('') + '<text x="' + (qpl + qw / 2) + '" y="' + (SH - 2) + '">' + (useT ? '°C on the overlay' : 'bin') + ' · body lengths ' + unit + ' (mean of flies still standing)</text></g>';
-  series.forEach((sr, i) => {
-    const cl = series.length > 1 ? PAL[i % PAL.length] : 'var(--pru)';
-    o += '<path d="' + sr.pts.map((p, j) => (j ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join('') + '" fill="none" stroke="' + cl + '" stroke-width="2.2"/>' + sr.pts.map(p => '<circle cx="' + X(p[0]).toFixed(1) + '" cy="' + Y(p[1]).toFixed(1) + '" r="2.5" fill="' + cl + '"><title>' + p[2] + ' flies</title></circle>').join('');
-    if (series.length > 1) o += '<g transform="translate(' + (qpl + qw + 14) + ' ' + (qpt + 8 + i * 20) + ')"><line x1="0" x2="22" y1="0" y2="0" stroke="' + cl + '" stroke-width="2.2"/><text x="28" y="4" font-size="12" fill="var(--ink)">' + esc(sr.k) + '</text></g>';
-  });
-  svg.innerHTML = o;
+  const step = Math.max(1, Math.ceil(ACT.nb / (W < 520 ? 4 : 10))), bins = []; for (let b = 0; b < ACT.nb; b += step) bins.push(b);
+  let labs = bins.map(b => fin(ACT.tempStart[b]) ? ACT.tempStart[b].toFixed(1) + '°' : fmtT(ACT.ts + b * ACT.bin));
+  if (new Set(labs).size < labs.length) labs = bins.map(b => fin(ACT.tempStart[b]) ? ACT.tempStart[b].toFixed(2) + '°' : fmtT(ACT.ts + b * ACT.bin));
+  bins.forEach((b, i) => g.fillText(labs[i], clamp(pl + b * cw, pl + 14, W - 18), y - gap + 6));
+  g.textAlign = 'left'; g.textBaseline = 'bottom'; g.fillText('Stronger colour = more walking (' + (S.act.log ? 'log2(1 + x) scale, ' : '') + 'tops out at ' + vmax.toFixed(0) + ' body lengths per bin); blank = no positions. Tick = knockdown.' + (labelled ? ' Within each group, flies are ordered by knockdown time.' : ''), pl, pt - 6);
+  drawActivityCharts();
 }
+/* ---------- activity charts ---------- */
+const actTf = v => S.act.log ? Math.log2(1 + v) : v;
+const actUnit = () => S.act.log ? 'log2(1 + body lengths per min)' : 'body lengths per min';
+// mean walking speed over seconds [a, b) of a fly, in body lengths per minute; NaN if under 60% of the seconds have a position
+function actWin(sp, a, b) { let s2 = 0, n = 0, tot = 0; for (let u = Math.max(0, Math.floor(a)); u < Math.min(sp.length, Math.ceil(b)); u++) { tot++; const v = sp[u]; if (v === v) { s2 += v; n++; } } return n && n >= 0.6 * tot ? s2 / n * 60 : NaN; }
+function meanSE(v) { const n = v.length; if (!n) return [NaN, NaN, 0]; const m = v.reduce((a, b) => a + b, 0) / n; const sd = n > 1 ? Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (n - 1)) : NaN; return [m, n > 1 ? sd / Math.sqrt(n) : NaN, n]; }
+function lineChart(svg, series, o) {
+  const W = svg.clientWidth, H = svg.clientHeight; if (!W || !H) return;
+  const pts = series.flatMap(sr => sr.pts); if (!pts.length) { svg.innerHTML = '<text x="12" y="24" fill="currentColor">Not enough data.</text>'; return; }
+  const x0 = Math.min(...pts.map(p => p[0])), x1 = Math.max(...pts.map(p => p[0])), ym = Math.max(0.5, ...pts.map(p => p[1] + (fin(p[2]) ? p[2] : 0)));
+  const pl = 52, pr = series.length > 1 ? 170 : 14, pt = 16, pb = 38, pw = W - pl - pr, ph = H - pt - pb;
+  const X = v => pl + (x1 > x0 ? (v - x0) / (x1 - x0) : 0.5) * pw, Y = v => pt + ph - clamp(v / ym, 0, 1.05) * ph;
+  const yt = axisTicks(0, ym, 4), xt = axisTicks(x0, x1, W < 520 ? 4 : 8);
+  let h = '<g stroke="var(--line)">' + yt.map(v => '<line x1="' + pl + '" x2="' + (pl + pw) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>').join('') + (o.vline != null && o.vline >= x0 && o.vline <= x1 ? '<line x1="' + X(o.vline) + '" x2="' + X(o.vline) + '" y1="' + pt + '" y2="' + (pt + ph) + '" stroke="var(--ink)" stroke-dasharray="4 3"/>' : '') + '</g>' +
+    '<g fill="var(--mut)" font-size="12" text-anchor="end">' + yt.map(v => '<text x="' + (pl - 6) + '" y="' + (Y(v) + 4) + '">' + (+v.toFixed(2)) + '</text>').join('') + '</g>' +
+    '<text transform="translate(13 ' + (pt + ph / 2) + ') rotate(-90)" fill="var(--mut)" font-size="12" text-anchor="middle">' + esc(o.ylab) + '</text>' +
+    '<g fill="var(--mut)" font-size="12" text-anchor="middle">' + xt.map(v => '<text x="' + X(v) + '" y="' + (pt + ph + 18) + '">' + esc(o.xfmt(v)) + '</text>').join('') + '<text x="' + (pl + pw / 2) + '" y="' + (H - 3) + '">' + esc(o.xlab) + '</text></g>';
+  series.forEach((sr, i) => {
+    const cl = sr.color, P = sr.pts, band = P.filter(p => fin(p[2]));
+    if (band.length > 1) h += '<path d="' + band.map((p, j) => (j ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1] + p[2]).toFixed(1)).join('') + band.slice().reverse().map(p => 'L' + X(p[0]).toFixed(1) + ' ' + Y(Math.max(0, p[1] - p[2])).toFixed(1)).join('') + 'Z" fill="' + cl + '" fill-opacity=".14" stroke="none"/>';
+    h += '<path d="' + P.map((p, j) => (j ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join('') + '" fill="none" stroke="' + cl + '" stroke-width="2.2"/>';
+    h += P.map(p => '<circle cx="' + X(p[0]).toFixed(1) + '" cy="' + Y(p[1]).toFixed(1) + '" r="5" fill="transparent"><title>' + esc(sr.k) + ': ' + p[1].toFixed(2) + (fin(p[2]) ? ' ± ' + p[2].toFixed(2) : '') + ' (' + p[3] + (p[3] === 1 ? ' fly' : ' flies') + ')</title></circle>').join('');
+    if (series.length > 1) h += '<g transform="translate(' + (pl + pw + 14) + ' ' + (pt + 8 + i * 20) + ')"><line x1="0" x2="22" y1="0" y2="0" stroke="' + cl + '" stroke-width="2.2"/><text x="28" y="4" font-size="12" fill="var(--ink)">' + esc(sr.k) + '</text></g>';
+  });
+  svg.innerHTML = h;
+}
+function dotPlot(svg, groups, ylab, fmt) {
+  const W = svg.clientWidth, H = svg.clientHeight; if (!W || !H) return;
+  const all = groups.flatMap(g => g.vals.map(v => v[1])).filter(fin); if (!all.length) { svg.innerHTML = '<text x="12" y="24" fill="currentColor">No values for this measure.</text>'; return; }
+  let lo = Math.min(...all), hi = Math.max(...all); const pad = Math.max(0.05, (hi - lo) * 0.1); lo -= pad; hi += pad;
+  const pl = 58, pr = 14, pt = 12, pb = 48, pw = W - pl - pr, ph = H - pt - pb, bw = pw / groups.length, Y = v => pt + (1 - (v - lo) / (hi - lo)) * ph, yt = axisTicks(lo, hi, 5);
+  let h = '<g stroke="var(--line)">' + yt.map(v => '<line x1="' + pl + '" x2="' + (pl + pw) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>').join('') + '</g><g fill="var(--mut)" font-size="12" text-anchor="end">' + yt.map(v => '<text x="' + (pl - 6) + '" y="' + (Y(v) + 4) + '">' + fmt(v) + '</text>').join('') + '</g>' +
+    '<text transform="translate(13 ' + (pt + ph / 2) + ') rotate(-90)" fill="var(--mut)" font-size="12" text-anchor="middle">' + esc(ylab) + '</text>';
+  groups.forEach((g, gi) => {
+    const cx = pl + bw * (gi + 0.5), v = g.vals.filter(x => fin(x[1])), [m, se] = meanSE(v.map(x => x[1]));
+    h += '<text x="' + cx + '" y="' + (pt + ph + 20) + '" font-size="12" font-weight="600" fill="' + g.color + '" text-anchor="middle">' + esc(g.k) + '</text><text x="' + cx + '" y="' + (pt + ph + 36) + '" font-size="11" fill="var(--mut)" text-anchor="middle">n = ' + v.length + '</text>';
+    v.forEach((x, i) => { h += '<circle cx="' + (cx - 12 + ((i * 37) % 9) * 1.4).toFixed(1) + '" cy="' + Y(x[1]).toFixed(1) + '" r="4.5" fill="' + g.color + '" fill-opacity=".55"><title>' + esc(x[0]) + ': ' + fmt(x[1]) + '</title></circle>'; });
+    if (fin(m)) { const mx = cx + 12, e = fin(se) ? se : 0; h += '<g stroke="' + g.color + '" stroke-width="1.8"><line x1="' + mx + '" x2="' + mx + '" y1="' + Y(m + e) + '" y2="' + Y(m - e) + '"/><line x1="' + (mx - 6) + '" x2="' + (mx + 6) + '" y1="' + Y(m + e) + '" y2="' + Y(m + e) + '"/><line x1="' + (mx - 6) + '" x2="' + (mx + 6) + '" y1="' + Y(m - e) + '" y2="' + Y(m - e) + '"/></g><path d="M' + mx + ' ' + (Y(m) - 7) + 'l7 7l-7 7l-7-7z" fill="' + g.color + '"><title>mean ' + fmt(m) + (fin(se) ? ' ± ' + fmt(se) : '') + '</title></path>'; }
+  });
+  svg.innerHTML = h;
+}
+function perFly() {
+  const lo = parseFloat(String($('#pmLo').value).replace(',', '.')), hi = parseFloat(String($('#pmHi').value).replace(',', '.'));
+  const a = fin(lo) ? timeAtTemp(lo) : null, b = fin(hi) ? timeAtTemp(hi) : null;
+  return ACT.wells.map(w => {
+    const stand = fin(w.kd) ? w.kd - ACT.t0 : w.sp.length;
+    let win = NaN;
+    if (a != null) { const bb = Math.min(b != null ? b - ACT.t0 : w.sp.length, stand); if (bb - (a - ACT.t0) >= 30) win = actWin(w.sp, a - ACT.t0, bb); }
+    let peak = NaN, tpk = NaN;
+    for (let c = 60; c <= stand; c += 15) { const v = actWin(w.sp, c - 60, c); if (fin(v) && !(v <= peak)) { peak = v; tpk = tempSm(ACT.t0 + c - 30); } }
+    return { id: w.id, status: w.status, kd: w.kd, win, peak, tpk };
+  });
+}
+function drawActivityCharts() {
+  if (!ACT || !ACT.wells.length) { for (const id of ['actCurve', 'alCurve', 'pmPlot']) $('#' + id).innerHTML = ''; $('#pmTbl').innerHTML = ''; return; }
+  const AG = actGroups(), keys = AG.keys, one = keys.length === 1, colr = k => one ? 'var(--pru)' : AG.color(k), bin = ACT.bin, stepS = Math.max(5, bin / 4);
+  const used = k => AG.members[k].filter(w => w.status !== 'never');
+  const s1 = keys.map(k => { const ws = used(k), pts = [];
+    for (let c = bin / 2; c <= ACT.wells[0].sp.length - bin / 2; c += stepS) {
+      const tc = ACT.t0 + c; if (tc < ACT.ts) continue;
+      const v = ws.filter(w => !(fin(w.kd) && w.kd < tc + bin / 2)).map(w => actWin(w.sp, c - bin / 2, c + bin / 2)).filter(fin).map(actTf);
+      const [m, se, n] = meanSE(v), x = tempSm(tc); if (n && fin(x)) pts.push([x, m, se, n]);
+    }
+    return { k, color: colr(k), pts }; }).filter(sr => sr.pts.length);
+  lineChart($('#actCurve'), s1, { xlab: '°C (smoothed ramp)', ylab: actUnit(), xfmt: v => v.toFixed(v % 1 ? 1 : 0) });
+  const span = 10 * 60, after = 120;
+  const s2 = keys.map(k => { const ws = used(k).filter(w => fin(w.kd)), pts = [];
+    for (let o = -span; o <= after; o += 15) {
+      const v = ws.map(w => { const e = w.kd - ACT.t0 + o; return e - 30 >= 0 && e <= w.sp.length ? actWin(w.sp, e - 30, e) : NaN; }).filter(fin).map(actTf);
+      const [m, se, n] = meanSE(v); if (n) pts.push([o / 60, m, se, n]);
+    }
+    return { k, color: colr(k), pts }; }).filter(sr => sr.pts.length);
+  lineChart($('#alCurve'), s2, { xlab: 'minutes relative to knockdown' + (fin(ACT.slope) ? ' (the plate warms ≈ ' + ACT.slope.toFixed(2) + ' °C per minute)' : ''), ylab: actUnit() + ', previous 30 s', xfmt: v => (v > 0 ? '+' : '') + (+v.toFixed(1)), vline: 0 });
+  const PF = perFly(), byId = Object.fromEntries(PF.map(r => [r.id, r])), metric = $('#pmMetric').value;
+  const val = r => metric === 'win' ? r.win : metric === 'peak' ? r.peak : r.tpk, isAct = metric !== 'tpeak';
+  const groups = keys.map(k => ({ k, color: colr(k), vals: used(k).map(w => { const v = val(byId[w.id]); return [w.id, isAct && fin(v) ? actTf(v) : v]; }) }));
+  const ylab = metric === 'tpeak' ? 'temperature at peak activity (°C)' : actUnit() + (metric === 'win' ? ', ' + $('#pmLo').value + '–' + $('#pmHi').value + ' °C' : ', best minute');
+  dotPlot($('#pmPlot'), groups, ylab, v => (+v).toFixed(2));
+  const keyOf = id => keys.find(k => AG.members[k].some(w => w.id === id)) || '';
+  $('#pmTbl').innerHTML = '<thead><tr><th>Well</th><th>Group</th><th>Status</th><th class="n">Knockdown °C</th><th class="n">Mean in window</th><th class="n">Peak</th><th class="n">°C at peak</th></tr></thead><tbody>' +
+    PF.map(r => { const e = eff(S.res[r.id]); return '<tr><td>' + r.id + '</td><td>' + esc(keyOf(r.id)) + '</td><td>' + (r.status === 'never' ? 'no knockdown call' : esc(STATUS[r.status])) + '</td><td class="n">' + (e.status === 'kd' ? fmtC(e.temp) : '') + '</td><td class="n">' + (fin(r.win) ? r.win.toFixed(1) : '–') + '</td><td class="n">' + (fin(r.peak) ? r.peak.toFixed(1) : '–') + '</td><td class="n">' + fmtC(r.tpk) + '</td></tr>'; }).join('') + '</tbody>';
+}
+function perFlyMatrix() {
+  if (!ACT) return null;
+  const AG = actGroups(), keyOf = id => AG.keys.find(k => AG.members[k].some(w => w.id === id)) || '', lo = $('#pmLo').value, hi = $('#pmHi').value, l2 = v => fin(v) ? Math.log2(1 + v).toFixed(3) : '';
+  return [['well', 'genotype', 'treatment', 'sex', 'group', 'status', 'knockdown_temp_C', 'window_from_C', 'window_to_C', 'mean_activity_in_window_BL_per_min', 'log2_1p_mean_activity_in_window', 'peak_activity_BL_per_min', 'log2_1p_peak_activity', 'temp_at_peak_C']]
+    .concat(perFly().map(r => { const L = labelOf(r.id), e = eff(S.res[r.id]); return [r.id, L.genotype, L.treatment, L.sex, keyOf(r.id), r.status === 'never' ? 'no knockdown call' : STATUS[r.status], e.status === 'kd' ? fmtC(e.temp) : '', lo, hi, fin(r.win) ? r.win.toFixed(2) : '', l2(r.win), fin(r.peak) ? r.peak.toFixed(2) : '', l2(r.peak), fin(r.tpk) ? r.tpk.toFixed(2) : '']; }));
+}
+$('#pmCopy').addEventListener('click', () => { const M = perFlyMatrix(); if (M) copyText(M.map(r => r.join('\t')).join('\n'), $('#pmMsg')); });
+$('#pmCsv').addEventListener('click', () => { const M = perFlyMatrix(); if (M) saveCsv(baseName() + '_activity_per_fly.csv', M, $('#pmMsg')); });
 function activityMatrix() {
   if (!ACT) return null;
   const head = ['well', 'genotype', 'treatment', 'sex', 'bin', 'bin_start_video_s', 'bin_start', 'temp_start_C', 'temp_mid_C', 'distance_body_lengths'].concat(ACT.mmPerPx ? ['distance_mm'] : []).concat(['pct_time_moving', 'standing_at_bin_end']);

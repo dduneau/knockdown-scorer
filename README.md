@@ -14,7 +14,11 @@ Everything runs in the browser: the video is opened from your computer and never
    with one row per well (`well,genotype,treatment,sex`; see `example_layout.csv`). *Download layout CSV* saves the current layout.
 4. Press **Analyse video** and keep the tab in front (it pauses in the background).
 5. Review the wells marked with a dot; one click accepts a suggested time or sets the knockdown on the current frame.
-6. Export with **Download CSV** (results, groups, activity) or **Copy table**.
+6. Export with **Download CSV** (results, groups, activity, per-fly activity) or **Copy table**.
+
+The **Activity** tab shows walking per group: a heatmap, the mean of flies still standing against temperature,
+activity aligned to each fly's knockdown, and one value per fly (mean activity in a temperature window, peak activity,
+temperature at the peak). Activity can be shown on a linear or log2(1 + x) scale.
 
 Chrome or Edge recommended (Safari 15.4+ and recent Firefox should also work).
 
