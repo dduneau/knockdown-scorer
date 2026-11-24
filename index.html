@@ -52,6 +52,15 @@ button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible
 button:disabled{opacity:.45;cursor:default}
 textarea{font:inherit;font-size:15px;width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
 .labtbl td,.labtbl th{padding:4px 4px;border:0}.labtbl input{min-height:36px;font-size:15px;padding:4px 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{font-size:14px;min-height:34px;padding:4px 10px;border-radius:99px;gap:6px}
+.chip i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.chip.on{outline:2px solid var(--ink);outline-offset:1px;font-weight:600}
+.chip b{font-weight:400;color:var(--mut);margin-left:2px}
+.labplate{border-collapse:separate;border-spacing:3px;width:100%;user-select:none;-webkit-user-select:none;touch-action:none}
+.labplate th{font-size:12px;color:var(--mut);padding:2px;cursor:pointer;text-align:center}
+.labplate td{border:1px solid var(--line);border-radius:6px;height:42px;padding:2px;font-size:11px;line-height:1.15;text-align:center;white-space:normal;cursor:pointer;background:var(--bg)}
+.labplate td.off{opacity:.45;border-style:dashed}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px;border-bottom:1px solid var(--line)}
 .tabs button{border-radius:8px 8px 0 0;border-bottom:0}.tabs button.on{background:var(--pruT);border-color:var(--pru);font-weight:600}
 input,select{font:inherit;font-size:16px;min-height:40px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%}
@@ -226,9 +235,20 @@ tbody tr.sel{background:var(--pruT)}
 
     <details id="labSet">
       <summary>Genotype, treatment and sex</summary>
-      <p class="mut">Type them per row; they are remembered with the layout. Paste exceptions for single wells below.</p>
-      <div class="scroll"><table id="labTbl" class="labtbl"></table></div>
-      <label class="lbl" style="margin-top:8px">Per-well labels, one per line: well, genotype, treatment, sex<textarea id="labWells" rows="3" placeholder="B3, w1118, PBS, female"></textarea></label>
+      <p class="mut">Pick a group, then click or drag over wells to paint it (click a row letter or column number to paint the whole line). Or load a CSV with one row per well: well, genotype, treatment, sex.</p>
+      <div class="chips" id="labChips"></div>
+      <div class="kv kv3" id="labNew">
+        <label class="lbl">Genotype<input id="nG" placeholder="e.g. Canton-S"></label>
+        <label class="lbl">Treatment<input id="nT" placeholder="e.g. PBS"></label>
+        <label class="lbl">Sex<input id="nS" placeholder="male / female"></label>
+      </div>
+      <div class="row"><button id="labAdd">Add group</button></div>
+      <div class="scroll"><table id="labPlate" class="labplate" aria-label="Plate map of groups"></table></div>
+      <div class="row">
+        <label class="btn" for="labFile">Load CSV</label><input type="file" id="labFile" accept=".csv,.txt,.tsv,text/csv" hidden>
+        <button id="labSave">Download layout CSV</button><button id="labClear">Clear wells</button>
+      </div>
+      <p class="mut" id="labMsg"></p>
     </details>
     <details id="detSet">
       <summary>Detection settings</summary>
@@ -377,7 +397,7 @@ function computeWells() {
   const n = out.filter(w => w.on).length;
   $('#sCount').textContent = n + ' of ' + out.length + ' wells included';
 }
-function saveLayout() { store.set('layout', S.L); computeWells(); draw(); previewDetect(); }
+function saveLayout() { store.set('layout', S.L); computeWells(); draw(); previewDetect(); renderLabTable(); }
 function stageRect() {
   const r = ov.getBoundingClientRect(), vw = S.vw || 16, vh = S.vh || 9;
   const s = Math.min(r.width / vw, r.height / vh);
@@ -1410,29 +1430,103 @@ $('#aCopy').addEventListener('click', () => { const M = activityMatrix(); if (M)
 $('#aCsv').addEventListener('click', () => { const M = activityMatrix(); if (M) saveCsv(baseName() + '_activity.csv', M, $('#aMsg')); });
 
 /* ---------- labels: genotype, treatment, sex ---------- */
-S.lab = Object.assign({ rows: {}, wells: '' }, store.get('labels', {}));
 const FACT = { genotype: 'Genotype', treatment: 'Treatment', sex: 'Sex' };
-function renderLabTable() {
-  const t = $('#labTbl'); if (!t) return;
-  const rows = Array.from({ length: S.L.rows }, (_, r) => ROWN[r]);
-  t.innerHTML = '<thead><tr><th>Row</th><th>Genotype</th><th>Treatment</th><th>Sex</th></tr></thead><tbody>' + rows.map(R => '<tr><td>' + R + '</td>' + ['genotype', 'treatment', 'sex'].map(f => '<td><input data-r="' + R + '" data-f="' + f + '" value="' + esc(((S.lab.rows[R] || {})[f]) || '') + '" aria-label="Row ' + R + ' ' + f + '"></td>').join('') + '</tr>').join('') + '</tbody>';
-  $('#labWells').value = S.lab.wells || '';
+const normSex = v => { const x = String(v || '').trim(); if (/^(m|male|males|♂|homme|mâle|male?s?)$/i.test(x)) return 'male'; if (/^(f|female|females|♀|femelle)$/i.test(x)) return 'female'; return x; };
+const gkey = g => [g.genotype, g.treatment, g.sex].join('|');
+const gname = g => { const sx = g.sex === 'male' ? '♂' : g.sex === 'female' ? '♀' : g.sex; return [sx, g.treatment, g.genotype].filter(Boolean).join(' ') || '(blank)'; };
+(function loadLabels() {
+  const v2 = store.get('labels2', null);
+  S.lab = v2 && v2.map ? v2 : { map: {}, groups: [] };
+  const old = store.get('labels', null);       // earlier per-row format
+  if (!v2 && old && old.rows) for (const R in old.rows) for (let c = 1; c <= 24; c++) { const o = old.rows[R]; if (o && (o.genotype || o.treatment || o.sex)) S.lab.map[R + c] = { genotype: o.genotype || '', treatment: o.treatment || '', sex: normSex(o.sex) }; }
+  for (const id in S.lab.map) addGroup(S.lab.map[id], true);
+  S.lab.active = 0;
+})();
+function addGroup(g, quiet) { const k = gkey(g); let i = S.lab.groups.findIndex(x => gkey(x) === k); if (i < 0) { S.lab.groups.push({ genotype: g.genotype || '', treatment: g.treatment || '', sex: g.sex || '' }); i = S.lab.groups.length - 1; } if (!quiet) S.lab.active = i; return i; }
+const gColor = g => PAL[Math.max(0, S.lab.groups.findIndex(x => gkey(x) === gkey(g))) % PAL.length];
+function labelOf(id) { const g = S.lab.map[id]; return g ? { genotype: g.genotype || '', treatment: g.treatment || '', sex: g.sex || '' } : { genotype: '', treatment: '', sex: '' }; }
+const hasLabels = () => S.wells.some(w => w.on && S.lab.map[w.id]);
+function renderChips() {
+  const ch = $('#labChips'); if (!ch) return;
+  ch.innerHTML = S.lab.groups.map((g, i) => { const n = Object.values(S.lab.map).filter(x => gkey(x) === gkey(g)).length; return '<button class="chip' + (i === S.lab.active ? ' on' : '') + '" data-i="' + i + '"><i style="background:' + PAL[i % PAL.length] + '"></i>' + esc(gname(g)) + '<b>' + n + '</b></button>'; }).join('') +
+    '<button class="chip' + (S.lab.active === -1 ? ' on' : '') + '" data-i="-1">Eraser</button>' + (S.lab.groups.length ? '<button class="chip" data-del="1" title="Remove the selected group">Remove group</button>' : '');
 }
-$('#labTbl').addEventListener('input', e => { const i = e.target; if (!i.dataset.r) return; (S.lab.rows[i.dataset.r] = S.lab.rows[i.dataset.r] || {})[i.dataset.f] = i.value.trim(); labChanged(); });
-$('#labWells').addEventListener('input', e => { S.lab.wells = e.target.value; labChanged(); });
+function paintCell(td) { const g = S.lab.map[td.dataset.id]; td.textContent = g ? gname(g) : ''; td.style.background = g ? gColor(g) + '22' : ''; td.style.borderColor = g ? gColor(g) : ''; }
+function renderLabTable() {
+  renderChips();
+  const L = S.L, cols = Array.from({ length: L.cols }, (_, c) => c + 1);
+  $('#labPlate').innerHTML = '<tr><th></th>' + cols.map(c => '<th data-col="' + c + '">' + c + '</th>').join('') + '</tr>' +
+    Array.from({ length: L.rows }, (_, r) => ROWN[r]).map(R => '<tr><th data-row="' + R + '">' + R + '</th>' + cols.map(c => { const id = R + c, g = S.lab.map[id], off = L.off.includes(id); return '<td data-id="' + id + '" class="' + (off ? 'off' : '') + '" title="' + id + '"' + (g ? ' style="background:' + gColor(g) + '22;border-color:' + gColor(g) + '"' : '') + '>' + (g ? esc(gname(g)) : '') + '</td>'; }).join('') + '</tr>').join('');
+}
+function paint(ids) {
+  const g = S.lab.active >= 0 ? S.lab.groups[S.lab.active] : null;
+  for (const id of ids) { if (g) S.lab.map[id] = Object.assign({}, g); else delete S.lab.map[id]; const td = document.querySelector('#labPlate td[data-id="' + id + '"]'); if (td) paintCell(td); }
+  labChanged(true);
+}
+let painting = false;
+$('#labPlate').addEventListener('pointerdown', e => {
+  const td = e.target.closest('td[data-id]'), th = e.target.closest('th');
+  if (td) { painting = true; paint([td.dataset.id]); e.preventDefault(); }
+  else if (th && th.dataset.row) paint(Array.from({ length: S.L.cols }, (_, c) => th.dataset.row + (c + 1)));
+  else if (th && th.dataset.col) paint(Array.from({ length: S.L.rows }, (_, r) => ROWN[r] + th.dataset.col));
+});
+$('#labPlate').addEventListener('pointerover', e => { if (!painting) return; const td = e.target.closest('td[data-id]'); if (td) paint([td.dataset.id]); });
+document.addEventListener('pointerup', () => { painting = false; });
+$('#labChips').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  if (b.dataset.del) { const i = S.lab.active; if (i >= 0) { const k = gkey(S.lab.groups[i]); for (const id in S.lab.map) if (gkey(S.lab.map[id]) === k) delete S.lab.map[id]; S.lab.groups.splice(i, 1); S.lab.active = S.lab.groups.length ? 0 : -1; labChanged(); } return; }
+  S.lab.active = +b.dataset.i; renderLabTable();
+});
+$('#labAdd').addEventListener('click', () => {
+  const g = { genotype: $('#nG').value.trim(), treatment: $('#nT').value.trim(), sex: normSex($('#nS').value) };
+  if (!g.genotype && !g.treatment && !g.sex) { $('#labMsg').textContent = 'Type at least one of genotype, treatment or sex.'; return; }
+  addGroup(g); $('#nT').value = ''; $('#nS').value = ''; $('#labMsg').textContent = 'Now click or drag over its wells.'; labChanged();
+});
+$('#labClear').addEventListener('click', () => { S.lab.map = {}; labChanged(); });
 let labTimer = 0;
-function labChanged() { store.set('labels', S.lab); clearTimeout(labTimer); labTimer = setTimeout(() => { if (S.phase === 'review') { renderTable(); renderGroups(); drawActivity(); } }, 300); }
-function wellOverrides() {
-  const out = {};
-  for (const line of String(S.lab.wells || '').split(/\n/)) {
-    const p = line.split(/[,;\t]/).map(x => x.trim()); if (!p[0]) continue;
-    const id = p[0].toUpperCase(); if (!/^[A-P]\d{1,2}$/.test(id)) continue;
-    out[id] = { genotype: p[1] || '', treatment: p[2] || '', sex: p[3] || '' };
+function labChanged(cellsOnly) {
+  store.set('labels2', { map: S.lab.map, groups: S.lab.groups }); if (cellsOnly) renderChips(); else renderLabTable();
+  clearTimeout(labTimer); labTimer = setTimeout(() => { if (S.phase === 'review') { renderTable(); renderGroups(); drawActivity(); } }, 250);
+}
+function parseLayoutCsv(text) {
+  const lines = String(text).replace(/^﻿/, '').split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) throw new Error('The file is empty.');
+  const delim = ['\t', ';', ','].sort((a, b) => lines[0].split(b).length - lines[0].split(a).length)[0];
+  const split = l => l.split(delim).map(x => x.trim().replace(/^"(.*)"$/, '$1').trim());
+  const head = split(lines[0]).map(h => h.toLowerCase());
+  const find = re => head.findIndex(h => re.test(h));
+  let iw = find(/^(well|position|pos|cell|arena)$/), ir = find(/^row$/), ic = find(/^(col|column)$/);
+  let ig = find(/genotype|strain|line|stock/), it = find(/treat|condition|infection|injection|bacteria/), is = find(/^(sex|gender)$/);
+  let rows = lines.slice(1);
+  if (iw < 0 && ir < 0) { iw = 0; ig = 1; it = 2; is = 3; rows = lines; if (/^[A-P]\d{1,2}$/i.test(split(lines[0])[0]) === false) rows = lines.slice(1); }
+  const map = {}; let n = 0, bad = [];
+  for (const l of rows) {
+    const c = split(l); let id = iw >= 0 ? c[iw] : (c[ir] || '') + (c[ic] || '');
+    id = String(id || '').toUpperCase().replace(/\s+/g, '').replace(/^([A-P])0*(\d+)$/, '$1$2');
+    if (!/^[A-P]\d{1,2}$/.test(id)) { if (c.join('')) bad.push(id || l.slice(0, 12)); continue; }
+    const g = { genotype: ig >= 0 ? c[ig] || '' : '', treatment: it >= 0 ? c[it] || '' : '', sex: is >= 0 ? normSex(c[is]) : '' };
+    if (g.genotype || g.treatment || g.sex) { map[id] = g; n++; }
   }
+  return { map, n, bad };
+}
+$('#labFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const { map, n, bad } = parseLayoutCsv(await f.text());
+    if (!n) throw new Error('No wells found. The first column should be the well (A1, B3…), then genotype, treatment, sex.');
+    S.lab.map = map; S.lab.groups = []; for (const id in map) addGroup(map[id], true); S.lab.active = 0; labChanged();
+    $('#labMsg').textContent = 'Loaded ' + n + ' wells in ' + S.lab.groups.length + ' groups from ' + f.name + (bad.length ? '; skipped ' + bad.length + ' line(s) without a valid well.' : '.');
+  } catch (err) { $('#labMsg').textContent = 'Could not read that file: ' + err.message; }
+});
+function layoutMatrix() {
+  const out = [['well', 'genotype', 'treatment', 'sex']];
+  for (let r = 0; r < S.L.rows; r++) for (let c = 1; c <= S.L.cols; c++) { const id = ROWN[r] + c, g = labelOf(id); out.push([id, g.genotype, g.treatment, g.sex]); }
   return out;
 }
-function labelOf(id) { const r = S.lab.rows[id[0]] || {}, o = wellOverrides()[id]; const L = {}; for (const f in FACT) L[f] = (o && o[f]) || r[f] || ''; return L; }
-const hasLabels = () => S.wells.some(w => w.on && Object.values(labelOf(w.id)).some(Boolean));
+$('#labSave').addEventListener('click', () => {
+  const M = layoutMatrix();
+  if (DL || !window.claude) saveCsv('plate_layout.csv', M, $('#labMsg')); else copyText(M.map(r => r.join('\t')).join('\n'), $('#labMsg'));
+});
 /* ---------- tabs ---------- */
 document.querySelector('.tabs').addEventListener('click', e => {
   const b = e.target.closest('button[data-tab]'); if (!b) return;

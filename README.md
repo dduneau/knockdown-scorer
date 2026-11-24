@@ -10,7 +10,8 @@ Everything runs in the browser: the video is opened from your computer and never
 1. Open the page and drop in the video (MP4/H.264 or WebM).
 2. Drag the two dots onto the centres of the first and last wells (A1 and D6); untick empty wells by clicking them.
    Rings show which wells have a detected fly. Make sure the yellow dashed box covers the temperature text.
-3. Optionally type genotype, treatment and sex per row.
+3. Optionally label the wells under *Genotype, treatment and sex*: paint groups onto the plate map, or load a CSV
+   with one row per well (`well,genotype,treatment,sex`; see `example_layout.csv`). *Download layout CSV* saves the current layout.
 4. Press **Analyse video** and keep the tab in front (it pauses in the background).
 5. Review the wells marked with a dot; one click accepts a suggested time or sets the knockdown on the current frame.
 6. Export with **Download CSV** (results, groups, activity) or **Copy table**.
