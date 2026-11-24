@@ -1,0 +1,25 @@
+well,genotype,treatment,sex
+A1,,,
+B1,,,
+C1,,,
+D1,,,
+A2,,PBS,male
+B2,,P. rettgeri,male
+C2,,PBS,female
+D2,,P. rettgeri,female
+A3,,PBS,female
+B3,,P. rettgeri,female
+C3,,PBS,male
+D3,,P. rettgeri,male
+A4,,PBS,male
+B4,,P. rettgeri,male
+C4,,PBS,female
+D4,,P. rettgeri,female
+A5,,PBS,female
+B5,,P. rettgeri,female
+C5,,PBS,male
+D5,,P. rettgeri,male
+A6,,PBS,male
+B6,,P. rettgeri,male
+C6,,PBS,female
+D6,,P. rettgeri,female
