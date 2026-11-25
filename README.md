@@ -27,6 +27,16 @@ exports without it are named from the file name. The combined view draws knockdo
 standing, per-fly activity and activity against temperature, with *Video* available as a grouping, and exports one
 combined table. Use the same temperature window in every video before comparing per-fly activity.
 
+**Statistics.** Each graph has a **Run statistics** button (nothing runs on its own). The fly is always the unit:
+- *Knockdown temperature*: linear model with the two plotted factors and their interaction (type II F tests), group means,
+  and the differences along the axis within each colour group (Holm-adjusted). Video is a block when videos are pooled.
+- *% still standing*: log-rank test on the knockdown temperature (flies still up at the end are censored), stratified by video.
+- *Activity, how often flies walk, speed while walking*: each fly is summarised by a straight line through its own 20-s
+  windows while standing (last minute before knockdown left out): its level at a temperature all flies were standing at,
+  and its change per °C; groups are compared on these per-fly values with the same linear model.
+- *Activity before knockdown*: activity 4–2 min before knockdown, and the log2 change into the last 2 min.
+- *One value per fly*: the same linear model on the plotted value, with a warning when flies went down inside the window.
+
 The version shown next to the title (and in the browser tab) tells you which build GitHub Pages is serving.
 
 Chrome or Edge recommended (Safari 15.4+ and recent Firefox should also work).

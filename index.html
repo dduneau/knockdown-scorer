@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Knockdown scorer v11</title>
+<title>Knockdown scorer v12</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,6 +27,12 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Literata,Georg
 .top{padding-bottom:0;max-width:1500px}
 h1{font-size:clamp(30px,4vw,44px);line-height:1.05;font-weight:600;margin:0 0 8px;text-wrap:balance}
 h2{font-size:21px;line-height:1.2;font-weight:600;margin:0 0 8px;text-wrap:balance}
+.stat{margin:6px 0 26px;padding:12px 14px;border:1px solid var(--line);border-radius:8px}
+.stat>.mut{margin:0 0 0 12px;font-size:14px}
+.stOut h4{font-size:15px;margin:16px 0 4px}.stOut .stModel{font-size:14px;color:var(--mut);margin:0 0 8px}
+.stGrid{display:flex;flex-wrap:wrap;gap:8px 28px;align-items:flex-start}.stGrid>table{width:auto}
+.stTbl{width:auto;font-size:14px;margin:4px 0 10px}.stTbl td,.stTbl th{padding:4px 10px}.stTbl tr.sig td{font-weight:600}
+.warn{color:var(--car);font-size:14px;margin:8px 0}
 .ver{font-size:15px;font-weight:400;color:var(--mut);vertical-align:middle;white-space:nowrap}
 .views{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 0}
 .views button.on{background:var(--pruT);border-color:var(--pru);font-weight:600}
@@ -139,7 +145,7 @@ tbody tr.sel{background:var(--pruT)}
 </head>
 <body>
 <header class="band top">
-  <h1>Knockdown scorer <span class="ver">v11 · 25 Nov 2026</span></h1>
+  <h1>Knockdown scorer <span class="ver">v12 · 25 Nov 2026</span></h1>
   <p class="lede" style="margin-bottom:0">Tracks the fly in every well, finds when each one stops walking for good, and reads the plate temperature from the video overlay at that moment. Everything runs in this browser: the video is never uploaded.</p>
   <div class="views" role="tablist"><button role="tab" data-view="analyse" class="on" aria-selected="true">Analyse a video</button><button role="tab" data-view="combine" aria-selected="false">Combine videos</button></div>
 </header>
@@ -291,8 +297,10 @@ tbody tr.sel{background:var(--pruT)}
     <h3>Knockdown temperature by group (dots = flies, diamond = mean ± SE)</h3>
     <div class="fig" id="gFig" style="min-height:380px"><svg id="gPlot" role="img" aria-label="Knockdown temperature by group"></svg></div>
     <div class="scroll"><table id="gTbl"></table></div>
+    <div class="stat" data-st="gKd"><button class="stRun">Run statistics</button><span class="mut">Linear model on the knockdown temperatures (one value per fly): the effect of each factor, their interaction, and the differences along the axis. Flies still standing at the end are left out; the curves below include them.</span><div class="stOut"></div></div>
     <h3>Flies still standing, by group</h3>
     <div class="fig" id="gCurveFig"><svg id="gCurve" role="img" aria-label="Percent standing by group"></svg></div>
+    <div class="stat" data-st="gSurv"><button class="stRun">Run statistics</button><span class="mut">Log-rank test: compares whole curves, counting flies still standing at the end as censored.</span><div class="stOut"></div></div>
   </div>
   <div id="tAct" hidden>
   <h2 style="margin-top:8px">Activity</h2>
@@ -309,18 +317,29 @@ tbody tr.sel{background:var(--pruT)}
   <h3>Flies still standing: mean ± SE against temperature</h3>
   <p class="mut">Each point averages the flies of a group that are still standing, over a sliding window one bin wide (moved a quarter bin at a time). The band is ± SE; hover a point for the number of flies. Flies without a knockdown call are left out.</p>
   <div class="fig" id="actFig" style="min-height:280px"><svg id="actCurve" role="img" aria-label="Mean activity versus temperature"></svg></div>
+  <div class="stat" data-st="a_act"><button class="stRun">Run statistics</button><span class="mut">Summarises each fly by its activity level and how fast it changes with temperature, then compares groups on those per-fly values.</span><div class="stOut"></div></div>
+  <h3>How often flies walk</h3>
+  <p class="mut">Share of seconds in which a standing fly walked (at least 0.2 body lengths per second), same sliding window. This is the “how often” part of activity.</p>
+  <div class="fig" style="min-height:280px"><svg id="pctCurve" role="img" aria-label="Percent of time walking versus temperature"></svg></div>
+  <div class="stat" data-st="a_pct"><button class="stRun">Run statistics</button><span class="mut">Same approach: per-fly level and change per °C of the time spent walking.</span><div class="stOut"></div></div>
+  <h3>Speed while walking</h3>
+  <p class="mut">Mean speed over the seconds in which the fly walked, in body lengths per second (windows with fewer than 3 walking seconds are left out). This is the “how fast” part of activity.</p>
+  <div class="fig" style="min-height:280px"><svg id="spdCurve" role="img" aria-label="Walking speed versus temperature"></svg></div>
+  <div class="stat" data-st="a_spd"><button class="stRun">Run statistics</button><span class="mut">Same approach: per-fly level and change per °C of the walking speed.</span><div class="stOut"></div></div>
   <h3>Activity before knockdown</h3>
   <p class="mut">Each fly lined up on its own knockdown (0 = knockdown); activity over the preceding 30 s, mean ± SE per group. Shows how activity changes in the run-up to collapse, whatever the temperature at which it happens.</p>
   <div class="fig" id="alFig" style="min-height:280px"><svg id="alCurve" role="img" aria-label="Activity aligned to knockdown"></svg></div>
+  <div class="stat" data-st="aAl"><button class="stRun">Run statistics</button><span class="mut">Compares the activity shortly before collapse, and how sharply it falls in the last 2 min, between groups.</span><div class="stOut"></div></div>
   <h3>One value per fly</h3>
   <div class="actctl">
-    <label class="lbl" style="width:260px">Measure<select id="pmMetric"><option value="win">Mean activity in a temperature window</option><option value="peak">Peak activity (best 1-min window)</option><option value="tpeak">Temperature at peak activity</option></select></label>
+    <label class="lbl" style="width:260px">Measure<select id="pmMetric"><option value="win">Mean activity in a temperature window</option><option value="peak">Peak activity (best 1-min window)</option><option value="tpeak">Temperature at peak activity</option><option value="pwin">% of time walking in the window</option><option value="swin">Walking speed in the window</option></select></label>
     <label class="lbl">Window from (°C)<input id="pmLo" inputmode="decimal"></label>
     <label class="lbl">to (°C)<input id="pmHi" inputmode="decimal"></label>
     <button id="pmGo">Update</button><button id="pmCopy">Copy per-fly table</button><button id="pmCsv" hidden>Download per-fly CSV</button>
   </div>
   <p class="mut" id="pmMsg">Activity is counted only while the fly is standing. Dots = flies, diamond = mean ± SE.</p>
   <div class="fig" id="pmFig" style="min-height:340px"><svg id="pmPlot" role="img" aria-label="Per-fly activity by group"></svg></div>
+  <div class="stat" data-st="aPf"><button class="stRun">Run statistics</button><span class="mut">Linear model on the plotted value (one per fly).</span><div class="stOut"></div></div>
   <div class="scroll"><table id="pmTbl"></table></div>
   </div>
 </section>
@@ -342,17 +361,27 @@ tbody tr.sel{background:var(--pruT)}
     <h3>Knockdown temperature by group (dots = flies, diamond = mean ± SE)</h3>
     <div class="fig" style="min-height:380px"><svg id="cPlot" role="img" aria-label="Pooled knockdown temperature by group"></svg></div>
     <div class="scroll"><table id="cTbl"></table></div>
+    <div class="stat" data-st="cKd"><button class="stRun">Run statistics</button><span class="mut">Linear model on the knockdown temperatures, with video as a block when several videos are pooled.</span><div class="stOut"></div></div>
     <h3>Flies still standing, by group</h3>
     <div class="fig" style="min-height:300px"><svg id="cCurve" role="img" aria-label="Pooled percent standing by group"></svg></div>
+    <div class="stat" data-st="cSurv"><button class="stRun">Run statistics</button><span class="mut">Log-rank test stratified by video; flies still standing at the end count as censored.</span><div class="stOut"></div></div>
     <h3>Activity, one value per fly</h3>
     <div class="actctl">
-      <label class="lbl" style="width:260px">Measure<select id="cMetric"><option value="win">Mean activity in the temperature window</option><option value="peak">Peak activity (best 1-min window)</option><option value="tpeak">Temperature at peak activity</option></select></label>
+      <label class="lbl" style="width:260px">Measure<select id="cMetric"><option value="win">Mean activity in the temperature window</option><option value="peak">Peak activity (best 1-min window)</option><option value="tpeak">Temperature at peak activity</option><option value="pwin">% of time walking in the window</option><option value="swin">Walking speed in the window</option></select></label>
       <label class="lbl">Activity scale<select id="cLog"><option value="lin">Linear</option><option value="log">log2(1 + x)</option></select></label>
     </div>
     <p class="mut" id="cPfMsg"></p>
     <div class="fig" style="min-height:340px"><svg id="cPfPlot" role="img" aria-label="Pooled per-fly activity"></svg></div>
+    <div class="stat" data-st="cPf"><button class="stRun">Run statistics</button><span class="mut">Linear model on the plotted value, with video as a block.</span><div class="stOut"></div></div>
     <h3>Activity of flies still standing against temperature (mean ± SE)</h3>
     <div class="fig" style="min-height:300px"><svg id="cAct" role="img" aria-label="Pooled activity against temperature"></svg></div>
+    <div class="stat" data-st="c_act"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C, compared between groups with video as a block.</span><div class="stOut"></div></div>
+    <h3>How often flies walk, against temperature</h3>
+    <div class="fig" style="min-height:300px"><svg id="cPct" role="img" aria-label="Pooled percent of time walking against temperature"></svg></div>
+    <div class="stat" data-st="c_pct"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C of the time spent walking.</span><div class="stOut"></div></div>
+    <h3>Speed while walking, against temperature</h3>
+    <div class="fig" style="min-height:300px"><svg id="cSpd" role="img" aria-label="Pooled walking speed against temperature"></svg></div>
+    <div class="stat" data-st="c_spd"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C of the walking speed.</span><div class="stOut"></div></div>
   </div>
 </section>
 
@@ -1452,13 +1481,14 @@ function computeActivity() {
       if (q >= 0 && s2 - q <= 5) { const gp = s2 - q, v = Math.hypot(px[s2] - px[q], py[s2] - py[q]) / BL / gp; for (let u = q + 1; u <= s2; u++) sp[u] = v > 0.2 ? v : 0; }
       q = s2;
     }
-    const dist = new Float32Array(nb), pct = new Float32Array(nb).fill(NaN);
+    const dist = new Float32Array(nb), pct = new Float32Array(nb).fill(NaN), spd = new Float32Array(nb).fill(NaN);
     for (let bI = 0; bI < nb; bI++) {
       let sum = 0, val = 0, mov = 0;
       for (let u = off + bI * bin; u < off + (bI + 1) * bin && u < nall; u++) { const v = sp[u]; if (v === v) { sum += v; val++; if (v > 0) mov++; } }
       dist[bI] = val >= bin * 0.3 ? sum / val * bin : NaN; pct[bI] = val >= bin * 0.3 ? 100 * mov / val : NaN;
+      spd[bI] = val >= bin * 0.3 && mov >= 5 ? sum / mov : NaN;
     }
-    wells.push({ id: w.id, kd: e.status === 'kd' ? e.t : null, status: e.status, dist, pct, sp });
+    wells.push({ id: w.id, kd: e.status === 'kd' ? e.t : null, status: e.status, dist, pct, spd, sp });
   });
   const tempMid = [], tempStart = [];
   for (let bI = 0; bI < nb; bI++) { tempStart.push(tempSm(ts + bI * bin)); tempMid.push(tempSm(ts + (bI + 0.5) * bin)); }
@@ -1519,6 +1549,9 @@ const actTf = v => S.act.log ? Math.log2(1 + v) : v;
 const actUnit = () => S.act.log ? 'log2(1 + body lengths per min)' : 'body lengths per min';
 // mean walking speed over seconds [a, b) of a fly, in body lengths per minute; NaN if under 60% of the seconds have a position
 function actWin(sp, a, b) { let s2 = 0, n = 0, tot = 0; for (let u = Math.max(0, Math.floor(a)); u < Math.min(sp.length, Math.ceil(b)); u++) { tot++; const v = sp[u]; if (v === v) { s2 += v; n++; } } return n && n >= 0.6 * tot ? s2 / n * 60 : NaN; }
+// share of walking seconds (%) and speed while walking (body lengths/s) over seconds [a, b)
+function pctWin(sp, a, b) { let n = 0, mov = 0, tot = 0; for (let u = Math.max(0, Math.floor(a)); u < Math.min(sp.length, Math.ceil(b)); u++) { tot++; const v = sp[u]; if (v === v) { n++; if (v > 0) mov++; } } return n && n >= 0.6 * tot ? 100 * mov / n : NaN; }
+function spdWin(sp, a, b) { let s2 = 0, mov = 0; for (let u = Math.max(0, Math.floor(a)); u < Math.min(sp.length, Math.ceil(b)); u++) { const v = sp[u]; if (v > 0) { s2 += v; mov++; } } return mov >= 3 ? s2 / mov : NaN; }
 function meanSE(v) { const n = v.length; if (!n) return [NaN, NaN, 0]; const m = v.reduce((a, b) => a + b, 0) / n; const sd = n > 1 ? Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (n - 1)) : NaN; return [m, n > 1 ? sd / Math.sqrt(n) : NaN, n]; }
 function lineChart(svg, series, o) {
   const W = svg.clientWidth, H = svg.clientHeight; if (!W || !H) return;
@@ -1560,25 +1593,28 @@ function perFly() {
   const a = fin(lo) ? timeAtTemp(lo) : null, b = fin(hi) ? timeAtTemp(hi) : null;
   return ACT.wells.map(w => {
     const stand = fin(w.kd) ? w.kd - ACT.t0 : w.sp.length;
-    let win = NaN;
-    if (a != null) { const bb = Math.min(b != null ? b - ACT.t0 : w.sp.length, stand); if (bb - (a - ACT.t0) >= 30) win = actWin(w.sp, a - ACT.t0, bb); }
+    let win = NaN, pwin = NaN, swin = NaN;
+    if (a != null) { const bb = Math.min(b != null ? b - ACT.t0 : w.sp.length, stand); if (bb - (a - ACT.t0) >= 30) { win = actWin(w.sp, a - ACT.t0, bb); pwin = pctWin(w.sp, a - ACT.t0, bb); swin = spdWin(w.sp, a - ACT.t0, bb); } }
     let peak = NaN, tpk = NaN;
     for (let c = 60; c <= stand; c += 15) { const v = actWin(w.sp, c - 60, c); if (fin(v) && !(v <= peak)) { peak = v; tpk = tempSm(ACT.t0 + c - 30); } }
-    return { id: w.id, status: w.status, kd: w.kd, win, peak, tpk };
+    return { id: w.id, status: w.status, kd: w.kd, win, pwin, swin, peak, tpk };
   });
 }
 function drawActivityCharts() {
   if (!ACT || !ACT.wells.length) { for (const id of ['actCurve', 'alCurve', 'pmPlot']) $('#' + id).innerHTML = ''; $('#pmTbl').innerHTML = ''; return; }
   const AG = actGroups(), keys = AG.keys, one = keys.length === 1, colr = k => one ? 'var(--pru)' : AG.color(k), bin = ACT.bin, stepS = Math.max(5, bin / 4);
   const used = k => AG.members[k].filter(w => w.status !== 'never');
-  const s1 = keys.map(k => { const ws = used(k), pts = [];
+  const slide = (fn, tf) => keys.map(k => { const ws = used(k), pts = [];
     for (let c = bin / 2; c <= ACT.wells[0].sp.length - bin / 2; c += stepS) {
       const tc = ACT.t0 + c; if (tc < ACT.ts) continue;
-      const v = ws.filter(w => !(fin(w.kd) && w.kd < tc + bin / 2)).map(w => actWin(w.sp, c - bin / 2, c + bin / 2)).filter(fin).map(actTf);
+      const v = ws.filter(w => !(fin(w.kd) && w.kd < tc + bin / 2)).map(w => fn(w.sp, c - bin / 2, c + bin / 2)).filter(fin).map(tf);
       const [m, se, n] = meanSE(v), x = tempSm(tc); if (n && fin(x)) pts.push([x, m, se, n]);
     }
     return { k, color: colr(k), pts }; }).filter(sr => sr.pts.length);
-  lineChart($('#actCurve'), s1, { xlab: '°C (smoothed ramp)', ylab: actUnit(), xfmt: v => v.toFixed(v % 1 ? 1 : 0) });
+  const xo = { xlab: '°C (smoothed ramp)', xfmt: v => v.toFixed(v % 1 ? 1 : 0) };
+  lineChart($('#actCurve'), slide(actWin, actTf), Object.assign({ ylab: actUnit() }, xo));
+  lineChart($('#pctCurve'), slide(pctWin, v => v), Object.assign({ ylab: '% of time walking' }, xo));
+  lineChart($('#spdCurve'), slide(spdWin, v => v), Object.assign({ ylab: 'body lengths per s, while walking' }, xo));
   const span = 10 * 60, after = 120;
   const s2 = keys.map(k => { const ws = used(k).filter(w => fin(w.kd)), pts = [];
     for (let o = -span; o <= after; o += 15) {
@@ -1588,30 +1624,32 @@ function drawActivityCharts() {
     return { k, color: colr(k), pts }; }).filter(sr => sr.pts.length);
   lineChart($('#alCurve'), s2, { xlab: 'minutes relative to knockdown' + (fin(ACT.slope) ? ' (the plate warms ≈ ' + ACT.slope.toFixed(2) + ' °C per minute)' : ''), ylab: actUnit() + ', previous 30 s', xfmt: v => (v > 0 ? '+' : '') + (+v.toFixed(1)), vline: 0 });
   const PF = perFly(), byId = Object.fromEntries(PF.map(r => [r.id, r])), metric = $('#pmMetric').value;
-  const val = r => metric === 'win' ? r.win : metric === 'peak' ? r.peak : r.tpk, isAct = metric !== 'tpeak';
+  const val = r => metric === 'tpeak' ? r.tpk : r[metric], isAct = metric === 'win' || metric === 'peak';
   const groups = keys.map(k => ({ k, color: colr(k), vals: used(k).map(w => { const v = val(byId[w.id]); return [w.id, isAct && fin(v) ? actTf(v) : v]; }) }));
-  const ylab = metric === 'tpeak' ? 'temperature at peak activity (°C)' : actUnit() + (metric === 'win' ? ', ' + $('#pmLo').value + '–' + $('#pmHi').value + ' °C' : ', best minute');
+  const wl = ', ' + $('#pmLo').value + '–' + $('#pmHi').value + ' °C';
+  const ylab = metric === 'tpeak' ? 'temperature at peak activity (°C)' : metric === 'pwin' ? '% of time walking' + wl : metric === 'swin' ? 'body lengths per s, while walking' + wl : actUnit() + (metric === 'win' ? wl : ', best minute');
   dotPlot($('#pmPlot'), groups, ylab, v => (+v).toFixed(2));
   const keyOf = id => keys.find(k => AG.members[k].some(w => w.id === id)) || '';
-  $('#pmTbl').innerHTML = '<thead><tr><th>Well</th><th>Group</th><th>Status</th><th class="n">Knockdown °C</th><th class="n">Mean in window</th><th class="n">Peak</th><th class="n">°C at peak</th></tr></thead><tbody>' +
-    PF.map(r => { const e = eff(S.res[r.id]); return '<tr><td>' + r.id + '</td><td>' + esc(keyOf(r.id)) + '</td><td>' + (r.status === 'never' ? 'no knockdown call' : esc(STATUS[r.status])) + '</td><td class="n">' + (e.status === 'kd' ? fmtC(e.temp) : '') + '</td><td class="n">' + (fin(r.win) ? r.win.toFixed(1) : '–') + '</td><td class="n">' + (fin(r.peak) ? r.peak.toFixed(1) : '–') + '</td><td class="n">' + fmtC(r.tpk) + '</td></tr>'; }).join('') + '</tbody>';
+  $('#pmTbl').innerHTML = '<thead><tr><th>Well</th><th>Group</th><th>Status</th><th class="n">Knockdown °C</th><th class="n">Mean in window</th><th class="n">% walking</th><th class="n">Walking speed</th><th class="n">Peak</th><th class="n">°C at peak</th></tr></thead><tbody>' +
+    PF.map(r => { const e = eff(S.res[r.id]); return '<tr><td>' + r.id + '</td><td>' + esc(keyOf(r.id)) + '</td><td>' + (r.status === 'never' ? 'no knockdown call' : esc(STATUS[r.status])) + '</td><td class="n">' + (e.status === 'kd' ? fmtC(e.temp) : '') + '</td><td class="n">' + (fin(r.win) ? r.win.toFixed(1) : '–') + '</td><td class="n">' + (fin(r.pwin) ? r.pwin.toFixed(0) : '–') + '</td><td class="n">' + (fin(r.swin) ? r.swin.toFixed(2) : '–') + '</td><td class="n">' + (fin(r.peak) ? r.peak.toFixed(1) : '–') + '</td><td class="n">' + fmtC(r.tpk) + '</td></tr>'; }).join('') + '</tbody>';
+  staleStats($('#tAct'));
 }
 function perFlyMatrix() {
   if (!ACT) return null;
   const AG = actGroups(), keyOf = id => AG.keys.find(k => AG.members[k].some(w => w.id === id)) || '', lo = $('#pmLo').value, hi = $('#pmHi').value, l2 = v => fin(v) ? Math.log2(1 + v).toFixed(3) : '';
-  return [['video', 'well', 'genotype', 'treatment', 'sex', 'group', 'status', 'knockdown_temp_C', 'window_from_C', 'window_to_C', 'mean_activity_in_window_BL_per_min', 'log2_1p_mean_activity_in_window', 'peak_activity_BL_per_min', 'log2_1p_peak_activity', 'temp_at_peak_C']]
-    .concat(perFly().map(r => { const L = labelOf(r.id), e = eff(S.res[r.id]); return [baseName(), r.id, L.genotype, L.treatment, L.sex, keyOf(r.id), r.status === 'never' ? 'no knockdown call' : STATUS[r.status], e.status === 'kd' ? fmtC(e.temp) : '', lo, hi, fin(r.win) ? r.win.toFixed(2) : '', l2(r.win), fin(r.peak) ? r.peak.toFixed(2) : '', l2(r.peak), fin(r.tpk) ? r.tpk.toFixed(2) : '']; }));
+  return [['video', 'well', 'genotype', 'treatment', 'sex', 'group', 'status', 'knockdown_temp_C', 'window_from_C', 'window_to_C', 'mean_activity_in_window_BL_per_min', 'log2_1p_mean_activity_in_window', 'peak_activity_BL_per_min', 'log2_1p_peak_activity', 'temp_at_peak_C', 'pct_time_walking_in_window', 'walking_speed_in_window_BL_per_s']]
+    .concat(perFly().map(r => { const L = labelOf(r.id), e = eff(S.res[r.id]); return [baseName(), r.id, L.genotype, L.treatment, L.sex, keyOf(r.id), r.status === 'never' ? 'no knockdown call' : STATUS[r.status], e.status === 'kd' ? fmtC(e.temp) : '', lo, hi, fin(r.win) ? r.win.toFixed(2) : '', l2(r.win), fin(r.peak) ? r.peak.toFixed(2) : '', l2(r.peak), fin(r.tpk) ? r.tpk.toFixed(2) : '', fin(r.pwin) ? r.pwin.toFixed(1) : '', fin(r.swin) ? r.swin.toFixed(3) : '']; }));
 }
 $('#pmCopy').addEventListener('click', () => { const M = perFlyMatrix(); if (M) copyText(M.map(r => r.join('\t')).join('\n'), $('#pmMsg')); });
 $('#pmCsv').addEventListener('click', () => { const M = perFlyMatrix(); if (M) saveCsv(baseName() + '_activity_per_fly.csv', M, $('#pmMsg')); });
 function activityMatrix() {
   if (!ACT) return null;
-  const head = ['video', 'well', 'genotype', 'treatment', 'sex', 'bin', 'bin_start_video_s', 'bin_start', 'temp_start_C', 'temp_mid_C', 'distance_body_lengths'].concat(ACT.mmPerPx ? ['distance_mm'] : []).concat(['pct_time_moving', 'standing_at_bin_end']);
+  const head = ['video', 'well', 'genotype', 'treatment', 'sex', 'bin', 'bin_start_video_s', 'bin_start', 'temp_start_C', 'temp_mid_C', 'distance_body_lengths'].concat(ACT.mmPerPx ? ['distance_mm'] : []).concat(['pct_time_moving', 'walking_speed_BL_per_s', 'standing_at_bin_end']);
   const out = [head];
   for (const w of ACT.wells) for (let b = 0; b < ACT.nb; b++) {
     const st = ACT.ts + b * ACT.bin, be = st + ACT.bin, d = w.dist[b];
     const L = labelOf(w.id);
-    out.push([baseName(), w.id, L.genotype, L.treatment, L.sex, b + 1, st.toFixed(1), fmtT(st), fmtC(ACT.tempStart[b]), fmtC(ACT.tempMid[b]), fin(d) ? d.toFixed(2) : ''].concat(ACT.mmPerPx ? [fin(d) ? (d * S.BL * ACT.mmPerPx).toFixed(2) : ''] : []).concat([fin(w.pct[b]) ? w.pct[b].toFixed(0) : '', fin(w.kd) && w.kd < be ? 0 : 1]));
+    out.push([baseName(), w.id, L.genotype, L.treatment, L.sex, b + 1, st.toFixed(1), fmtT(st), fmtC(ACT.tempStart[b]), fmtC(ACT.tempMid[b]), fin(d) ? d.toFixed(2) : ''].concat(ACT.mmPerPx ? [fin(d) ? (d * S.BL * ACT.mmPerPx).toFixed(2) : ''] : []).concat([fin(w.pct[b]) ? w.pct[b].toFixed(0) : '', fin(w.spd[b]) ? w.spd[b].toFixed(3) : '', fin(w.kd) && w.kd < be ? 0 : 1]));
   }
   return out;
 }
@@ -1743,6 +1781,7 @@ function renderGroups() {
   $('#gMsg').textContent = hasLabels() ? '' : 'No labels yet: open “Genotype, treatment and sex” in the panel beside the video and type the label of each row.';
   const G = groupData($('#gX').value, $('#gC').value, curFlies());
   drawGroupPlot($('#gPlot'), G, 'Knockdown temperature (°C)'); groupTable($('#gTbl'), G); drawGroupCurves($('#gCurve'), G, S.rampOK.map(r => r.temp), '°C on the overlay');
+  staleStats($('#tGroups'));
 }
 function drawGroupPlot(svg, G, ylab) {
   const W = svg.clientWidth, H = svg.clientHeight, all = G.groups.flatMap(g => g.v);
@@ -1798,7 +1837,7 @@ $('#gCopy').addEventListener('click', () => copyText(groupMatrix().map(r => r.jo
 $('#gCsv').addEventListener('click', () => saveCsv(baseName() + '_groups.csv', groupMatrix(), $('#gMsg')));
 
 /* ---------- combine several videos ---------- */
-const VERSION = 'v11 · 25 Nov 2026';
+const VERSION = 'v12 · 25 Nov 2026';
 document.title = 'Knockdown scorer ' + VERSION.split(' ·')[0];
 const COMB = { sets: store.get('combined', []) };
 const saveComb = () => { try { localStorage.setItem('kd1.combined', JSON.stringify(COMB.sets)); return true; } catch (e) { return false; } };
@@ -1809,10 +1848,11 @@ function setOf(video) { let d = COMB.sets.find(x => x.video === video); if (!d) 
 $('#bAddComb').addEventListener('click', () => {
   const v = baseName(), d = setOf(v);
   d.added = new Date().toISOString().slice(0, 10);
-  d.flies = rowsOut().filter(r => ['kd', 'active', 'never'].includes(r.e.status)).map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: r.sex, status: r.e.status, temp: r.e.status === 'kd' ? num(r.temp) : null, ramp: num(r.rampT) }));
+  d.flies = rowsOut().filter(r => ['kd', 'active', 'never'].includes(r.e.status)).map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: r.sex, status: r.e.status, temp: r.e.status === 'kd' ? num(r.temp) : null, ramp: num(r.rampT), kdT: r.e.status === 'kd' ? r.e.t : null, end: r.e.status === 'active' ? num(r.e.temp) : null }));
   if (ACT) {
-    d.perfly = perFly().map(r => { const L = labelOf(r.id); return { well: r.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, status: r.status, win: r.win, peak: r.peak, tpk: r.tpk, lo: num($('#pmLo').value), hi: num($('#pmHi').value) }; });
-    d.act = []; for (const w of ACT.wells) { if (w.status === 'never') continue; const L = labelOf(w.id); for (let b = 0; b < ACT.nb; b++) { const be = ACT.ts + (b + 1) * ACT.bin; if (fin(w.dist[b])) d.act.push({ well: w.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, tmid: ACT.tempMid[b], perMin: w.dist[b] * 60 / ACT.bin, standing: !(fin(w.kd) && w.kd < be) }); } }
+    d.perfly = perFly().map(r => { const L = labelOf(r.id); return { well: r.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, status: r.status, win: r.win, pwin: r.pwin, swin: r.swin, peak: r.peak, tpk: r.tpk, lo: num($('#pmLo').value), hi: num($('#pmHi').value) }; });
+    d.fine = ACT.wells.filter(w => w.status !== 'never').map(w => { const L = labelOf(w.id); return { well: w.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, w: fineWins(w).map(r => r.map(v => fin(v) ? +v.toFixed(3) : null)) }; });
+    d.act = []; for (const w of ACT.wells) { if (w.status === 'never') continue; const L = labelOf(w.id); for (let b = 0; b < ACT.nb; b++) { const be = ACT.ts + (b + 1) * ACT.bin; if (fin(w.dist[b])) d.act.push({ well: w.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, tmid: ACT.tempMid[b], perMin: w.dist[b] * 60 / ACT.bin, pct: w.pct[b], spd: w.spd[b], t: ACT.ts + b * ACT.bin, bin: ACT.bin, standing: !(fin(w.kd) && w.kd < be) }); } }
   }
   const ok = saveComb();
   $('#expMsg').textContent = ok ? 'Added “' + v + '” to the combined set (' + COMB.sets.length + ' video' + (COMB.sets.length > 1 ? 's' : '') + '). Open “Combine videos” at the top to see them together.' : 'The browser refused to store more data; download the CSVs and load them in “Combine videos” instead.';
@@ -1836,9 +1876,9 @@ $('#cFile').addEventListener('change', async e => {
       for (const r of rows) (byVid[vid(r)] = byVid[vid(r)] || []).push(r);
       for (const v in byVid) {
         const d = setOf(v), R = byVid[v];
-        if (h.includes('mean_activity_in_window_bl_per_min')) d.perfly = R.map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), status: normStatus(r.status), win: num(r.mean_activity_in_window_bl_per_min), peak: num(r.peak_activity_bl_per_min), tpk: num(r.temp_at_peak_c), lo: num(r.window_from_c), hi: num(r.window_to_c) }));
-        else if (h.includes('distance_body_lengths') && h.includes('temp_mid_c')) { const bins = new Set(R.map(r => r.bin_start_video_s)); d.act = R.filter(r => num(r.distance_body_lengths) != null).map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), tmid: num(r.temp_mid_c), perMin: num(r.distance_body_lengths) * 60 / (binSecs(R) || 60), standing: String(r.standing_at_bin_end) !== '0' })); }
-        else if (h.includes('knockdown_temp_c') && h.includes('status')) d.flies = R.map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), status: normStatus(r.status), temp: num(r.knockdown_temp_c), ramp: num(r.smoothed_ramp_temp_c) })).filter(r => r.status !== 'off');
+        if (h.includes('mean_activity_in_window_bl_per_min')) d.perfly = R.map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), status: normStatus(r.status), win: num(r.mean_activity_in_window_bl_per_min), pwin: num(r.pct_time_walking_in_window), swin: num(r.walking_speed_in_window_bl_per_s), peak: num(r.peak_activity_bl_per_min), tpk: num(r.temp_at_peak_c), lo: num(r.window_from_c), hi: num(r.window_to_c) }));
+        else if (h.includes('distance_body_lengths') && h.includes('temp_mid_c')) { const bins = new Set(R.map(r => r.bin_start_video_s)); d.act = R.filter(r => num(r.distance_body_lengths) != null).map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), tmid: num(r.temp_mid_c), perMin: num(r.distance_body_lengths) * 60 / (binSecs(R) || 60), pct: num(r.pct_time_moving), spd: num(r.walking_speed_bl_per_s), t: num(r.bin_start_video_s), bin: binSecs(R), standing: String(r.standing_at_bin_end) !== '0' })); }
+        else if (h.includes('knockdown_temp_c') && h.includes('status')) d.flies = R.map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), status: normStatus(r.status), temp: num(r.knockdown_temp_c), ramp: num(r.smoothed_ramp_temp_c), kdT: num(r.video_time_s), end: num(r.temp_at_end_if_alive_c) })).filter(r => r.status !== 'off');
         else { msg.push(f.name + ': not a file exported by this app'); continue; }
         added++;
       }
@@ -1853,7 +1893,7 @@ $('#cClear').addEventListener('click', () => { if (!COMB.sets.length) return; CO
 const lbl = (r, video) => ({ genotype: r.genotype || '', treatment: r.treatment || '', sex: normSex(r.sex) || '', video });
 function combFlies() {
   const useRamp = $('#cT').value === 'ramp';
-  return COMB.sets.flatMap(d => d.flies.map(r => ({ id: r.well + ' · ' + d.video, L: lbl(r, d.video), kd: r.status === 'kd', temp: useRamp && fin(r.ramp) ? r.ramp : r.temp })));
+  return COMB.sets.flatMap(d => d.flies.map(r => ({ id: r.well + ' · ' + d.video, L: lbl(r, d.video), kd: r.status === 'kd', temp: r.status === 'kd' ? (useRamp && fin(r.ramp) ? r.ramp : r.temp) : r.status === 'active' ? r.end : null })));
 }
 function combKey(L, fx, fc) { return [fx === 'none' ? '' : L[fx], fc === 'none' ? '' : (fc === 'sex' ? (L.sex === 'male' ? '♂' : L.sex === 'female' ? '♀' : L.sex) : L[fc])].filter(Boolean).join(' · ') || 'All flies'; }
 function renderComb() {
@@ -1871,19 +1911,26 @@ function renderComb() {
   drawGroupCurves($('#cCurve'), G, [], '°C (' + tl + ')');
   // per-fly activity, pooled
   const LOG = $('#cLog').value === 'log', tf = v => LOG ? Math.log2(1 + v) : v, metric = $('#cMetric').value;
-  const pf = COMB.sets.flatMap(d => d.perfly.filter(r => r.status !== 'never').map(r => ({ id: r.well + ' · ' + d.video, L: lbl(r, d.video), v: metric === 'win' ? r.win : metric === 'peak' ? r.peak : r.tpk, lo: r.lo, hi: r.hi })));
+  const pf = COMB.sets.flatMap(d => d.perfly.filter(r => r.status !== 'never').map(r => ({ id: r.well + ' · ' + d.video, L: lbl(r, d.video), v: metric === 'tpeak' ? r.tpk : r[metric], lo: r.lo, hi: r.hi })));
   const wins = [...new Set(COMB.sets.filter(d => d.perfly.length).map(d => (d.perfly[0].lo ?? '?') + '–' + (d.perfly[0].hi ?? '?')))];
-  $('#cPfMsg').textContent = !pf.length ? 'No per-fly activity values yet: add videos after analysing them, or load their per-fly activity CSVs.' : (metric === 'win' && wins.length > 1 ? 'Careful: the videos use different temperature windows (' + wins.join(', ') + ' °C). Use the same window in each video before adding it.' : (metric === 'win' ? 'Window ' + wins[0] + ' °C.' : ''));
+  $('#cPfMsg').textContent = !pf.length ? 'No per-fly activity values yet: add videos after analysing them, or load their per-fly activity CSVs.' : (['win', 'pwin', 'swin'].includes(metric) && wins.length > 1 ? 'Careful: the videos use different temperature windows (' + wins.join(', ') + ' °C). Use the same window in each video before adding it.' : (['win', 'pwin', 'swin'].includes(metric) ? 'Window ' + wins[0] + ' °C.' : ''));
   const keys = [...new Set(pf.map(r => combKey(r.L, fx, fc)))].sort();
-  dotPlot($('#cPfPlot'), keys.map((k, i) => ({ k, color: PAL[i % PAL.length], vals: pf.filter(r => combKey(r.L, fx, fc) === k).map(r => [r.id, fin(r.v) && metric !== 'tpeak' ? tf(r.v) : r.v]) })), metric === 'tpeak' ? 'temperature at peak activity (°C)' : (LOG ? 'log2(1 + body lengths per min)' : 'body lengths per min') + (metric === 'win' ? ', window' : ', best minute'), v => (+v).toFixed(2));
+  dotPlot($('#cPfPlot'), keys.map((k, i) => ({ k, color: PAL[i % PAL.length], vals: pf.filter(r => combKey(r.L, fx, fc) === k).map(r => [r.id, fin(r.v) && (metric === 'win' || metric === 'peak') ? tf(r.v) : r.v]) })), metric === 'tpeak' ? 'temperature at peak activity (°C)' : metric === 'pwin' ? '% of time walking, window' : metric === 'swin' ? 'body lengths per s while walking, window' : (LOG ? 'log2(1 + body lengths per min)' : 'body lengths per min') + (metric === 'win' ? ', window' : ', best minute'), v => (+v).toFixed(2));
   // activity against temperature (flies still standing), pooled in 0.1 °C steps
   const act = COMB.sets.flatMap(d => d.act.filter(r => r.standing && fin(r.tmid) && fin(r.perMin)).map(r => ({ L: lbl(r, d.video), t: Math.round(r.tmid * 10) / 10, v: tf(r.perMin) })));
   const ak = [...new Set(act.map(r => combKey(r.L, fx, fc)))].sort();
   lineChart($('#cAct'), ak.map((k, i) => { const rs = act.filter(r => combKey(r.L, fx, fc) === k), ts = [...new Set(rs.map(r => r.t))].sort((a, b) => a - b); return { k, color: PAL[i % PAL.length], pts: ts.map(t => { const [m, se, n] = meanSE(rs.filter(r => r.t === t).map(r => r.v)); return [t, m, se, n]; }) }; }), { xlab: '°C (smoothed ramp, 0.1 °C steps)', ylab: LOG ? 'log2(1 + body lengths per min)' : 'body lengths per min', xfmt: v => v.toFixed(1) });
+  const pooled = (field, svg, ylab) => {
+    const rows = COMB.sets.flatMap(d => d.act.filter(r => r.standing && fin(r.tmid) && fin(r[field])).map(r => ({ L: lbl(r, d.video), t: Math.round(r.tmid * 10) / 10, v: r[field] })));
+    const ks = [...new Set(rows.map(r => combKey(r.L, fx, fc)))].sort();
+    lineChart(svg, ks.map((k, i) => { const rs = rows.filter(r => combKey(r.L, fx, fc) === k), ts = [...new Set(rs.map(r => r.t))].sort((a, b) => a - b); return { k, color: PAL[i % PAL.length], pts: ts.map(t => { const [m, se, n] = meanSE(rs.filter(r => r.t === t).map(r => r.v)); return [t, m, se, n]; }) }; }), { xlab: '°C (smoothed ramp, 0.1 °C steps)', ylab, xfmt: v => v.toFixed(1) });
+  };
+  pooled('pct', $('#cPct'), '% of time walking'); pooled('spd', $('#cSpd'), 'body lengths per s, while walking');
+  staleStats($('#combine'));
 }
 function combMatrix() {
-  const out = [['video', 'well', 'genotype', 'treatment', 'sex', 'status', 'knockdown_temp_C', 'smoothed_ramp_temp_C', 'mean_activity_in_window_BL_per_min', 'peak_activity_BL_per_min', 'temp_at_peak_C', 'window_from_C', 'window_to_C']];
-  for (const d of COMB.sets) for (const r of d.flies) { const p = d.perfly.find(x => x.well === r.well) || {}; out.push([d.video, r.well, r.genotype, r.treatment, r.sex, STATUS[r.status] || r.status, fin(r.temp) ? fmtC(r.temp) : '', fin(r.ramp) ? fmtC(r.ramp) : '', fin(p.win) ? p.win.toFixed(2) : '', fin(p.peak) ? p.peak.toFixed(2) : '', fin(p.tpk) ? fmtC(p.tpk) : '', p.lo ?? '', p.hi ?? '']); }
+  const out = [['video', 'well', 'genotype', 'treatment', 'sex', 'status', 'knockdown_temp_C', 'smoothed_ramp_temp_C', 'mean_activity_in_window_BL_per_min', 'peak_activity_BL_per_min', 'temp_at_peak_C', 'pct_time_walking_in_window', 'walking_speed_in_window_BL_per_s', 'window_from_C', 'window_to_C']];
+  for (const d of COMB.sets) for (const r of d.flies) { const p = d.perfly.find(x => x.well === r.well) || {}; out.push([d.video, r.well, r.genotype, r.treatment, r.sex, STATUS[r.status] || r.status, fin(r.temp) ? fmtC(r.temp) : '', fin(r.ramp) ? fmtC(r.ramp) : '', fin(p.win) ? p.win.toFixed(2) : '', fin(p.peak) ? p.peak.toFixed(2) : '', fin(p.tpk) ? fmtC(p.tpk) : '', fin(p.pwin) ? p.pwin.toFixed(1) : '', fin(p.swin) ? p.swin.toFixed(3) : '', p.lo ?? '', p.hi ?? '']); }
   return out;
 }
 $('#cCopy').addEventListener('click', () => copyText(combMatrix().map(r => r.join('\t')).join('\n'), $('#cMsg')));
@@ -1898,6 +1945,308 @@ document.querySelector('.views').addEventListener('click', e => {
   if (comb) { vid.pause(); requestAnimationFrame(renderComb); } else requestAnimationFrame(() => { draw(); drawCurve(); renderGroups(); drawActivity(); });
 });
 renderComb();
+
+/* ---------- statistics (run on demand, one value per fly) ---------- */
+function lgamma(x) {
+  const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - lgamma(1 - x);
+  x -= 1; let a = c[0]; const t = x + 7.5; for (let i = 1; i < 9; i++) a += c[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+function betacf(a, b, x) {
+  const TINY = 1e-300, qab = a + b, qap = a + 1, qam = a - 1; let c = 1, d = 1 - qab * x / qap; if (Math.abs(d) < TINY) d = TINY; d = 1 / d; let h = d;
+  for (let m = 1; m <= 400; m++) {
+    const m2 = 2 * m; let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < TINY) d = TINY; c = 1 + aa / c; if (Math.abs(c) < TINY) c = TINY; d = 1 / d; h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; if (Math.abs(d) < TINY) d = TINY; c = 1 + aa / c; if (Math.abs(c) < TINY) c = TINY; d = 1 / d; const del = d * c; h *= del; if (Math.abs(del - 1) < 3e-14) break;
+  }
+  return h;
+}
+function ibeta(x, a, b) {
+  if (x <= 0) return 0; if (x >= 1) return 1;
+  const bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+  return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b;
+}
+const pF = (F, d1, d2) => F === Infinity ? 0 : fin(F) && F >= 0 ? ibeta(d2 / (d2 + d1 * F), d2 / 2, d1 / 2) : NaN;
+function gammq(a, x) {
+  if (x <= 0) return 1; const lg = -x + a * Math.log(x) - lgamma(a);
+  if (x < a + 1) { let ap = a, sum = 1 / a, del = sum; for (let n = 0; n < 600; n++) { ap++; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 3e-14) break; } return 1 - sum * Math.exp(lg); }
+  let b = x + 1 - a, c = 1e300, d = 1 / b, h = d;
+  for (let i = 1; i < 600; i++) { const an = -i * (i - a); b += 2; d = an * d + b; if (Math.abs(d) < 1e-300) d = 1e-300; c = b + an / c; if (Math.abs(c) < 1e-300) c = 1e-300; d = 1 / d; const del = d * c; h *= del; if (Math.abs(del - 1) < 3e-14) break; }
+  return Math.exp(lg) * h;
+}
+const pChi = (x, df) => fin(x) ? gammq(df / 2, x / 2) : NaN;
+const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+const fmtP = p => !fin(p) ? '–' : p < 0.001 ? '< 0.001' : p.toFixed(3);
+function holm(ps) {
+  const idx = ps.map((p, i) => [p, i]).filter(x => fin(x[0])).sort((a, b) => a[0] - b[0]), m = idx.length, out = ps.map(() => NaN); let run = 0;
+  idx.forEach(([p, i], j) => { run = Math.max(run, Math.min(1, (m - j) * p)); out[i] = run; }); return out;
+}
+// least squares by Gram-Schmidt: residual sum of squares, rank, and which columns are not redundant
+function lsq(y, cols) {
+  const n = y.length, Q = [], keep = [], r = Float64Array.from(y);
+  cols.forEach((col, j) => {
+    const v = Float64Array.from(col), n0 = Math.sqrt(dot(v, v)); if (!(n0 > 0)) return;
+    for (let pass = 0; pass < 2; pass++) for (const q of Q) { const d = dot(q, v); for (let i = 0; i < n; i++) v[i] -= d * q[i]; }
+    const nv = Math.sqrt(dot(v, v)); if (nv < 1e-9 * n0) return;
+    for (let i = 0; i < n; i++) v[i] /= nv; Q.push(v); keep.push(j);
+    const d = dot(v, r); for (let i = 0; i < n; i++) r[i] -= d * v[i];
+  });
+  return { rss: dot(r, r), rank: Q.length, keep };
+}
+function invert(A) {
+  const n = A.length, M = A.map((r, i) => r.concat(A.map((_, j) => i === j ? 1 : 0)));
+  for (let c = 0; c < n; c++) {
+    let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    if (Math.abs(M[p][c]) < 1e-12) return null; [M[c], M[p]] = [M[p], M[c]];
+    const d = M[c][c]; for (let k = 0; k < 2 * n; k++) M[c][k] /= d;
+    for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c]; if (f) for (let k = 0; k < 2 * n; k++) M[r][k] -= f * M[c][k]; }
+  }
+  return M.map(r => r.slice(n));
+}
+const levelsOf = (items, f) => [...new Set(items.map(it => it.F[f]))].sort();
+const subsets = fs => { const out = []; for (let m = 1; m < 1 << fs.length; m++) out.push(fs.filter((_, i) => m >> i & 1)); return out.sort((a, b) => a.length - b.length); };
+function termCols(items, term) {
+  let cols = [items.map(() => 1)];
+  for (const f of term) { const lv = levelsOf(items, f).slice(1), nc = []; for (const c of cols) for (const l of lv) nc.push(items.map((it, i) => c[i] * (it.F[f] === l ? 1 : 0))); cols = nc; }
+  return cols;
+}
+// linear model with all interactions of the factors (+ video as a block); type II F tests
+function lmTest(items, factors, block) {
+  const y = items.map(it => it.y), n = y.length, terms = (block ? [['__b']] : []).concat(subsets(factors));
+  const colsOf = ts => [items.map(() => 1)].concat(ts.flatMap(t => termCols(items, t)));
+  const full = lsq(y, colsOf(terms)), dfe = n - full.rank, mse = full.rss / dfe;
+  const rows = terms.map(T => {
+    const base = terms.filter(U => !T.every(f => U.includes(f))), a = lsq(y, colsOf(base)), b = lsq(y, colsOf(base.concat([T]))), df = b.rank - a.rank;
+    const F = df > 0 && dfe > 0 ? (mse > 0 ? (a.rss - b.rss) / df / mse : Infinity) : NaN;
+    return { term: T, df, F, p: df > 0 && dfe > 0 ? pF(F, df, dfe) : NaN };
+  });
+  return { n, dfe, mse, rows };
+}
+// one mean per cell (+ block): differences between levels of the focus factor, within each combination of the others
+function pairwise(items, factors, focus, block) {
+  const key = o => factors.map(f => o[f]).join('\u0001'), cells = [...new Set(items.map(it => key(it.F)))];
+  const cols = cells.map(c => items.map(it => key(it.F) === c ? 1 : 0));
+  if (block) for (const l of levelsOf(items, '__b').slice(1)) cols.push(items.map(it => it.F.__b === l ? 1 : 0));
+  const y = items.map(it => it.y), fit = lsq(y, cols), K = fit.keep.map(j => cols[j]), dfe = y.length - K.length;
+  if (dfe < 1) return [];
+  const inv = invert(K.map(a => K.map(b => dot(a, b)))); if (!inv) return [];
+  const beta = inv.map(r => dot(r, K.map(a => dot(a, y)))), mse = fit.rss / dfe, at = c => fit.keep.indexOf(cells.indexOf(c));
+  const others = factors.filter(f => f !== focus), out = [];
+  const combos = [...new Map(items.map(it => [others.map(f => it.F[f]).join('\u0001'), it.F])).values()].sort((a, b) => others.map(f => a[f]).join() < others.map(f => b[f]).join() ? -1 : 1);
+  for (const cb of combos) {
+    const lv = levelsOf(items.filter(it => others.every(f => it.F[f] === cb[f])), focus);
+    for (let i = 0; i < lv.length; i++) for (let j = i + 1; j < lv.length; j++) {
+      const A = Object.assign({}, cb, { [focus]: lv[j] }), B = Object.assign({}, cb, { [focus]: lv[i] }), ia = at(key(A)), ib = at(key(B));
+      if (ia < 0 || ib < 0) continue;
+      const est = beta[ia] - beta[ib], se = Math.sqrt(mse * (inv[ia][ia] + inv[ib][ib] - 2 * inv[ia][ib])), t = est / se;
+      out.push({ a: lv[j], b: lv[i], within: others.map(f => cb[f]).join(' · ') || 'all flies', est, se, p: pF(t * t, 1, dfe) });
+    }
+  }
+  const adj = holm(out.map(r => r.p)); out.forEach((r, i) => { r.padj = adj[i]; });
+  return out;
+}
+function logrank(items, gkey) {
+  const gs = [...new Set(items.map(gkey))].sort(), k = gs.length; if (k < 2) return null;
+  const O = Array(k).fill(0), E = Array(k).fill(0), V = gs.map(() => Array(k).fill(0));
+  for (const s of [...new Set(items.map(x => x.F.__b || ''))]) {
+    const it = items.filter(x => (x.F.__b || '') === s), times = [...new Set(it.filter(x => x.event).map(x => x.time))].sort((a, b) => a - b);
+    for (const t of times) {
+      const nj = gs.map(g => it.filter(x => gkey(x) === g && x.time >= t).length), dj = gs.map(g => it.filter(x => gkey(x) === g && x.event && x.time === t).length);
+      const N = nj.reduce((a, b) => a + b, 0), D = dj.reduce((a, b) => a + b, 0); if (!N) continue;
+      for (let j = 0; j < k; j++) { O[j] += dj[j]; E[j] += nj[j] * D / N; }
+      if (N > 1) for (let j = 0; j < k; j++) for (let l = 0; l < k; l++) V[j][l] += D * (N - D) / (N - 1) * nj[j] / N * ((j === l ? 1 : 0) - nj[l] / N);
+    }
+  }
+  const d = O.map((o, j) => o - E[j]).slice(0, k - 1), inv = invert(V.slice(0, k - 1).map(r => r.slice(0, k - 1)));
+  if (!inv) return null;
+  const chi = dot(d, inv.map(r => dot(r, d)));
+  return { gs, O, E, chi, df: k - 1, p: pChi(chi, k - 1) };
+}
+/* building the reports */
+const FN = { genotype: 'genotype', treatment: 'treatment', sex: 'sex', video: 'video', __b: 'video (block)' };
+const facOf = (...fs) => [...new Set(fs.filter(f => f && f !== 'none'))];
+const labF = (L, fs, block) => { const F = {}; for (const f of fs) F[f] = (L[f] || '(unlabelled)'); if (block) F.__b = L.video || ''; return F; };
+function prepModel(items, factors, focus, block) {
+  factors = factors.filter(f => levelsOf(items, f).length > 1);
+  block = block && levelsOf(items, '__b').length > 1 && !factors.includes('video');
+  return { factors, focus: factors.includes(focus) ? focus : factors[0], block };
+}
+const cellName = (F, fs) => fs.map(f => F[f]).join(' · ') || 'All flies';
+function summaryTable(items, factors, fmt) {
+  const cells = [...new Set(items.map(it => cellName(it.F, factors)))].sort();
+  return '<table class="stTbl"><thead><tr><th>Group</th><th class="n">Flies</th><th class="n">Mean</th><th class="n">SE</th></tr></thead><tbody>' +
+    cells.map(c => { const [m, se, n] = meanSE(items.filter(it => cellName(it.F, factors) === c).map(it => it.y)); return '<tr><td>' + esc(c) + '</td><td class="n">' + n + '</td><td class="n">' + fmt(m) + '</td><td class="n">' + (fin(se) ? fmt(se) : '–') + '</td></tr>'; }).join('') + '</tbody></table>';
+}
+// o: { what, unit, fmt }
+function lmReport(items, factors0, focus0, block0, o) {
+  items = items.filter(it => fin(it.y));
+  const { factors, focus, block } = prepModel(items, factors0, focus0, block0), fmt = o.fmt || (v => v.toFixed(2));
+  const ttl = o.title || o.what; let h = '<h4>' + esc(ttl[0].toUpperCase() + ttl.slice(1)) + '</h4>';
+  if (items.length < 3) return h + '<p class="mut">Not enough flies with a value (' + items.length + ').</p>';
+  if (!factors.length) return h + '<p class="mut">All flies are in one group here, so there is nothing to compare.</p>' + summaryTable(items, [], fmt);
+  const A = lmTest(items, factors, block);
+  h += '<p class="stModel">Linear model: ' + esc(o.what) + ' ~ ' + factors.map(f => FN[f]).join(' × ') + (block ? ' + video' : '') + ' · ' + items.length + ' flies · residual SD ' + (A.dfe > 0 ? fmt(Math.sqrt(A.mse)) + ' ' + esc(o.unit) : '–') + '</p>';
+  if (A.dfe < 2) return h + '<p class="mut">Too few flies for this model (' + A.dfe + ' residual degree' + (A.dfe === 1 ? '' : 's') + ' of freedom). Pool more videos.</p>' + summaryTable(items, factors, fmt);
+  h += '<div class="stGrid"><table class="stTbl"><thead><tr><th>Effect</th><th class="n">df</th><th class="n">F</th><th class="n">p</th></tr></thead><tbody>' +
+    A.rows.map(r => '<tr' + (r.p < 0.05 ? ' class="sig"' : '') + '><td>' + r.term.map(f => FN[f]).join(' × ') + '</td><td class="n">' + (r.df || '–') + (r.df ? ', ' + A.dfe : '') + '</td><td class="n">' + (fin(r.F) ? r.F.toFixed(2) : r.F === Infinity ? '∞' : 'not estimable') + '</td><td class="n">' + fmtP(r.p) + '</td></tr>').join('') + '</tbody></table>';
+  h += summaryTable(items, factors, fmt) + '</div>';
+  const P = pairwise(items, factors, focus, block);
+  if (P.length) h += '<table class="stTbl"><thead><tr><th>Difference</th><th>Within</th><th class="n">Estimate</th><th class="n">SE</th><th class="n">p (Holm)</th></tr></thead><tbody>' +
+    P.map(r => '<tr' + (r.padj < 0.05 ? ' class="sig"' : '') + '><td>' + esc(r.a) + ' − ' + esc(r.b) + '</td><td>' + esc(r.within) + '</td><td class="n">' + (r.est > 0 ? '+' : '') + fmt(r.est) + ' ' + esc(o.unit) + '</td><td class="n">' + fmt(r.se) + '</td><td class="n">' + fmtP(r.padj) + '</td></tr>').join('') + '</tbody></table>';
+  return h;
+}
+function survReport(flies, factors0, focus0, block0) {
+  const items = flies.filter(f => fin(f.temp)).map(f => ({ time: f.temp, event: f.kd, F: labF(f.L, factors0, block0) }));
+  const { factors, focus, block } = prepModel(items, factors0, focus0, block0);
+  let h = '<h4>Are the curves different?</h4>';
+  if (!factors.length) return h + '<p class="mut">All flies are in one group here, so there is nothing to compare.</p>';
+  if (!block) items.forEach(it => { delete it.F.__b; });
+  const all = logrank(items, x => cellName(x.F, factors)), cens = items.filter(x => !x.event).length;
+  if (!all) return h + '<p class="mut">The test could not be computed (too few knockdowns).</p>';
+  h += '<p class="stModel">Log-rank test on the temperature at knockdown' + (block ? ', stratified by video' : '') + ' · ' + items.length + ' flies' + (cens ? ', ' + cens + ' still standing at the end (censored)' : '') + '</p>';
+  h += '<div class="stGrid"><table class="stTbl"><thead><tr><th>All ' + all.gs.length + ' groups</th><th class="n">χ²</th><th class="n">df</th><th class="n">p</th></tr></thead><tbody><tr' + (all.p < 0.05 ? ' class="sig"' : '') + '><td>any difference</td><td class="n">' + all.chi.toFixed(2) + '</td><td class="n">' + all.df + '</td><td class="n">' + fmtP(all.p) + '</td></tr></tbody></table>' +
+    '<table class="stTbl"><thead><tr><th>Group</th><th class="n">Down</th><th class="n">Expected</th></tr></thead><tbody>' + all.gs.map((g, i) => '<tr><td>' + esc(g) + '</td><td class="n">' + all.O[i] + '</td><td class="n">' + all.E[i].toFixed(1) + '</td></tr>').join('') + '</tbody></table></div>';
+  const others = factors.filter(f => f !== focus), P = [];
+  const combos = [...new Map(items.map(it => [others.map(f => it.F[f]).join('\u0001'), it.F])).values()];
+  for (const cb of combos) {
+    const sub = items.filter(it => others.every(f => it.F[f] === cb[f])), lv = levelsOf(sub, focus);
+    for (let i = 0; i < lv.length; i++) for (let j = i + 1; j < lv.length; j++) { const r = logrank(sub.filter(it => it.F[focus] === lv[i] || it.F[focus] === lv[j]), x => x.F[focus]); if (r) P.push({ a: lv[j], b: lv[i], within: others.map(f => cb[f]).join(' · ') || 'all flies', chi: r.chi, p: r.p, sh: r.O[1] - r.E[1] }); }
+  }
+  const adj = holm(P.map(r => r.p));
+  if (P.length) h += '<table class="stTbl"><thead><tr><th>Comparison</th><th>Within</th><th class="n">χ²</th><th class="n">p (Holm)</th><th>Which goes down first</th></tr></thead><tbody>' +
+    P.map((r, i) => '<tr' + (adj[i] < 0.05 ? ' class="sig"' : '') + '><td>' + esc(r.a) + ' vs ' + esc(r.b) + '</td><td>' + esc(r.within) + '</td><td class="n">' + r.chi.toFixed(2) + '</td><td class="n">' + fmtP(adj[i]) + '</td><td>' + esc(Math.abs(r.sh) < 0.05 ? '–' : r.sh > 0 ? r.a : r.b) + '</td></tr>').join('') + '</tbody></table>';
+  return h;
+}
+// each fly summarised by a straight line through its own bins: level at a common temperature and change per °C
+function lineReport(flies, factors, focus, block, o) {
+  const ok = flies.filter(f => f.pts.length >= 3 && Math.max(...f.pts.map(p => p[0])) - Math.min(...f.pts.map(p => p[0])) >= 0.1);
+  let h = '';
+  if (ok.length < 3) return '<p class="mut">Not enough flies with at least 3 usable windows spanning 0.1 °C (' + ok.length + ' of ' + flies.length + ').</p>';
+  const Tref = Math.floor(Math.min(...ok.map(f => Math.max(...f.pts.map(p => p[0])))) * 10) / 10;
+  const rows = ok.map(f => {
+    const n = f.pts.length, mT = f.pts.reduce((a, p) => a + p[0], 0) / n, my = f.pts.reduce((a, p) => a + p[1], 0) / n;
+    let sxx = 0, sxy = 0; for (const [T, y] of f.pts) { sxx += (T - mT) ** 2; sxy += (T - mT) * (y - my); }
+    const b = sxy / sxx; return { F: f.F, level: my + b * (Tref - mT), slope: b };
+  });
+  h += '<p class="mut">Each fly is summarised by a straight line through its own ' + esc(o.binWord) + ' while standing (its last minute before knockdown left out, as activity collapses then): its level at ' + Tref.toFixed(1) + ' °C, a temperature every fly in the test was still standing at, and its change per °C. ' + ok.length + ' of ' + flies.length + ' flies had enough data (at least 3 windows); flies that went down within about 2 min of the start cannot be summarised this way.</p>';
+  h += lmReport(rows.map(r => ({ F: r.F, y: r.level })), factors, focus, block, { title: 'Level at ' + Tref.toFixed(1) + ' °C', what: o.what + ' at ' + Tref.toFixed(1) + ' °C', unit: o.unit, fmt: o.fmt });
+  h += lmReport(rows.map(r => ({ F: r.F, y: r.slope })), factors, focus, block, { title: 'Change per °C', what: 'change of ' + o.what + ' per °C', unit: o.unit + ' per °C', fmt: o.fmt });
+  return h;
+}
+const ST = {};
+const sigOf = x => JSON.stringify(x, (k, v) => typeof v === 'number' ? +v.toFixed(4) : v);
+document.addEventListener('click', e => {
+  const b = e.target.closest('.stRun'); if (!b) return;
+  const box = b.closest('.stat'), r = ST[box.dataset.st]();
+  try { box.querySelector('.stOut').innerHTML = r.html(); box.dataset.sig = r.sig; } catch (err) { console.error(err); box.querySelector('.stOut').innerHTML = '<p class="mut">The statistics could not be computed: ' + esc(err.message || err) + '</p>'; }
+});
+function staleStats(scope) {
+  for (const box of scope.querySelectorAll('.stat[data-sig]')) {
+    let s = null; try { s = ST[box.dataset.st]().sig; } catch (e) {}
+    if (s !== box.dataset.sig) { box.querySelector('.stOut').innerHTML = '<p class="mut">The data or the grouping changed: run the statistics again.</p>'; delete box.dataset.sig; }
+  }
+}
+/* Groups tab and the combined view: knockdown temperature and the % standing curves */
+const kdItems = (flies, fs, block) => flies.filter(f => f.kd && fin(f.temp)).map(f => ({ y: f.temp, F: labF(f.L, fs, block) }));
+const KD_O = { what: 'knockdown temperature', unit: '°C' };
+ST.gKd = () => { const fs = facOf($('#gX').value, $('#gC').value), items = kdItems(curFlies(), fs, false); return { sig: sigOf([fs, items]), html: () => lmReport(items, fs, $('#gX').value, false, KD_O) }; };
+ST.gSurv = () => { const fs = facOf($('#gX').value, $('#gC').value), fl = curFlies().filter(f => fin(f.temp)); return { sig: sigOf([fs, fl.map(f => [f.temp, f.kd, labF(f.L, fs)])]), html: () => survReport(fl, fs, $('#gX').value, false) }; };
+const cBlock = () => COMB.sets.length > 1;
+ST.cKd = () => { const fs = facOf($('#cX').value, $('#cC').value), items = kdItems(combFlies(), fs, cBlock()); return { sig: sigOf([fs, items]), html: () => lmReport(items, fs, $('#cX').value, cBlock(), KD_O) }; };
+ST.cSurv = () => { const fs = facOf($('#cX').value, $('#cC').value), fl = combFlies().filter(f => fin(f.temp)); return { sig: sigOf([fs, fl.map(f => [f.temp, f.kd, labF(f.L, fs, true)])]), html: () => survReport(fl, fs, $('#cX').value, cBlock()) }; };
+/* Activity tab */
+const actFs = () => ['genotype', 'treatment', 'sex'].filter(f => new Set(ACT.wells.filter(w => w.status !== 'never').map(w => labelOf(w.id)[f] || '')).size > 1);
+const actFocus = fs => fs.includes('treatment') ? 'treatment' : fs[0];
+const MEAS = {
+  act: { what: 'activity', unit: () => S.act.log ? 'log2 units' : 'BL/min', fmt: v => v.toFixed(S.act.log ? 2 : 1) },
+  pct: { what: '% of time walking', unit: () => '%', fmt: v => v.toFixed(1) },
+  spd: { what: 'walking speed', unit: () => 'BL/s', fmt: v => v.toFixed(2) },
+};
+const LW = 20, LCUT = 60;   // per-fly lines: 20-s windows, the last minute before knockdown left out
+// 20-s windows of one fly: [temperature, activity (BL/min), % walking, walking speed (BL/s), window end (video s)]
+function fineWins(w) {
+  const out = [];
+  for (let c = Math.ceil(ACT.ts - ACT.t0); c + LW <= w.sp.length; c += LW) {
+    const T = tempSm(ACT.t0 + c + LW / 2); if (!fin(T)) continue;
+    out.push([T, actWin(w.sp, c, c + LW), pctWin(w.sp, c, c + LW), spdWin(w.sp, c, c + LW), ACT.t0 + c + LW]);
+  }
+  return out;
+}
+const FI = { act: 1, pct: 2, spd: 3 };
+function linePts(wins, kdT, key, tf) { const cut = fin(kdT) ? kdT - LCUT : Infinity; return wins.filter(r => r[4] <= cut && fin(r[0]) && fin(r[FI[key]])).map(r => [r[0], tf(r[FI[key]])]); }
+function actLineFlies(key) {
+  const fs = actFs();
+  return ACT.wells.filter(w => w.status !== 'never').map(w => ({ F: labF(labelOf(w.id), fs), pts: linePts(fineWins(w), w.kd, key, key === 'act' ? actTf : v => v) }));
+}
+for (const key of ['act', 'pct', 'spd']) ST['a_' + key] = () => {
+  const fl = ACT ? actLineFlies(key) : [], fs = ACT ? actFs() : [], m = MEAS[key];
+  return { sig: sigOf([key, fs, fl]), html: () => lineReport(fl, fs, actFocus(fs), false, { what: m.what, unit: m.unit(), fmt: m.fmt, binWord: '20-s windows' }) };
+};
+ST.aAl = () => {
+  const fs = ACT ? actFs() : [], items1 = [], items2 = [];
+  if (ACT) for (const w of ACT.wells) {
+    if (w.status === 'never' || !fin(w.kd)) continue;
+    const e = w.kd - ACT.t0; if (e - 240 < 0) continue;
+    const pre = actWin(w.sp, e - 240, e - 120), late = actWin(w.sp, e - 120, e), F = labF(labelOf(w.id), fs);
+    if (fin(pre)) items1.push({ F, y: actTf(pre) });
+    if (fin(pre) && fin(late)) items2.push({ F, y: Math.log2((1 + late) / (1 + pre)) });
+  }
+  return { sig: sigOf([fs, items1, items2]), html: () => '<p class="mut">Flies knocked down at least 4 min after the start of the analysis. The first test compares the activity 4 to 2 min before knockdown; the second, how much it falls into the last 2 min (log2 ratio: −1 = halved, −2 = quartered).</p>' +
+    lmReport(items1, fs, actFocus(fs), false, { title: 'Activity 4 to 2 min before knockdown', what: 'activity 4–2 min before knockdown', unit: MEAS.act.unit(), fmt: MEAS.act.fmt }) +
+    lmReport(items2, fs, actFocus(fs), false, { title: 'Change into the last 2 min (log2 ratio)', what: 'log2 change into the last 2 min', unit: 'log2', fmt: v => v.toFixed(2) }) };
+};
+const PFM = {
+  win: { what: 'mean activity in the window', act: true }, peak: { what: 'peak activity', act: true }, tpeak: { what: 'temperature at peak activity', unit: '°C' },
+  pwin: { what: '% of time walking in the window', unit: '%', fmt: v => v.toFixed(1) }, swin: { what: 'walking speed in the window', unit: 'BL/s' },
+};
+function windowNote(kdTemps, lo, hi, nflies) {
+  const inside = kdTemps.filter(t => fin(t) && t < hi).length, first = Math.min(...kdTemps.filter(fin));
+  return inside ? '<p class="warn">' + inside + ' of ' + nflies + ' flies went down before ' + hi + ' °C, so their value covers only the cooler part of the window, where flies walk more. For a fair comparison, end the window below the first knockdown (' + (fin(first) ? first.toFixed(1) + ' °C' : '–') + ').</p>' : '';
+}
+ST.aPf = () => {
+  const fs = ACT ? actFs() : [], metric = $('#pmMetric').value, M = PFM[metric], items = [];
+  const PF = ACT ? perFly() : [];
+  for (const r of PF) { if (r.status === 'never') continue; const v = r[metric === 'tpeak' ? 'tpk' : metric]; if (fin(v)) items.push({ F: labF(labelOf(r.id), fs), y: M.act ? actTf(v) : v }); }
+  const lo = num($('#pmLo').value), hi = num($('#pmHi').value), win = ['win', 'pwin', 'swin'].includes(metric);
+  const kd = PF.filter(r => r.status !== 'never').map(r => { const e = eff(S.res[r.id]); return e.status === 'kd' ? e.temp : NaN; });
+  return { sig: sigOf([metric, lo, hi, fs, items]), html: () => (win && fin(hi) ? windowNote(kd, lo, hi, kd.length) : '') + lmReport(items, fs, actFocus(fs), false, { what: M.what, unit: M.act ? MEAS.act.unit() : M.unit, fmt: M.fmt || (M.act ? MEAS.act.fmt : v => v.toFixed(2)) }) };
+};
+/* combined view: per-fly values and the curves, from the stored bins */
+function combLineFlies(key, fs) {
+  const LOG = $('#cLog').value === 'log', out = [], tf = key === 'act' && LOG ? v => Math.log2(1 + v) : v => v;
+  for (const d of COMB.sets) {
+    if (d.fine && d.fine.length) { for (const f of d.fine) { const fl = d.flies.find(x => x.well === f.well) || {}; out.push({ F: labF(lbl(fl.well ? fl : f, d.video), fs, true), pts: linePts(f.w, fl.status === 'kd' ? fl.kdT : null, key, tf) }); } continue; }
+    const byWell = {}; for (const r of d.act) (byWell[r.well] = byWell[r.well] || []).push(r);
+    for (const w in byWell) {
+      const fl = d.flies.find(f => f.well === w); if (fl && fl.status === 'never') continue;
+      const cut = fl && fl.status === 'kd' && fin(fl.kdT) ? fl.kdT - LCUT : null, pts = [];
+      for (const r of byWell[w]) {
+        if (cut != null && fin(r.t) && fin(r.bin) ? r.t + r.bin > cut : !r.standing) continue;
+        const y = key === 'act' ? (fin(r.perMin) ? (LOG ? Math.log2(1 + r.perMin) : r.perMin) : NaN) : r[key];
+        if (fin(r.tmid) && fin(y)) pts.push([r.tmid, y]);
+      }
+      out.push({ F: labF(lbl(byWell[w][0], d.video), fs, true), pts });
+    }
+  }
+  return out;
+}
+for (const key of ['act', 'pct', 'spd']) ST['c_' + key] = () => {
+  const fs = facOf($('#cX').value, $('#cC').value), fl = combLineFlies(key, fs), m = MEAS[key], LOG = $('#cLog').value === 'log';
+  return { sig: sigOf([key, LOG, fs, fl]), html: () => lineReport(fl, fs, $('#cX').value, cBlock(), { what: m.what, unit: key === 'act' ? (LOG ? 'log2 units' : 'BL/min') : m.unit(), fmt: key === 'act' ? (v => v.toFixed(LOG ? 2 : 1)) : m.fmt, binWord: COMB.sets.every(d => d.fine && d.fine.length) ? '20-s windows' : 'windows (bins of the activity CSV for loaded files)' }) };
+};
+ST.cPf = () => {
+  const fs = facOf($('#cX').value, $('#cC').value), metric = $('#cMetric').value, LOG = $('#cLog').value === 'log', M = PFM[metric === 'tpeak' ? 'tpeak' : metric], items = [], kd = [];
+  let lo = null, hi = null;
+  for (const d of COMB.sets) for (const r of d.perfly) {
+    if (r.status === 'never') continue; const v = metric === 'tpeak' ? r.tpk : r[metric];
+    const fl = d.flies.find(f => f.well === r.well); kd.push(fl && fl.status === 'kd' ? fl.temp : NaN); lo = r.lo; hi = r.hi;
+    if (fin(v)) items.push({ F: labF(lbl(r, d.video), fs, true), y: M.act && LOG ? Math.log2(1 + v) : v });
+  }
+  const win = ['win', 'pwin', 'swin'].includes(metric);
+  return { sig: sigOf([metric, LOG, fs, items]), html: () => (win && fin(hi) ? windowNote(kd, lo, hi, kd.length) : '') + lmReport(items, fs, $('#cX').value, cBlock(), { what: M.what, unit: M.act ? (LOG ? 'log2 units' : 'BL/min') : M.unit, fmt: M.fmt || (v => v.toFixed(M.act && !LOG ? 1 : 2)) }) };
+};
 
 /* ---------- start ---------- */
 syncSetupInputs(); setPhase('empty');
