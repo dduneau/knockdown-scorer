@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Knockdown scorer</title>
+<title>Knockdown scorer v10</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,6 +27,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Literata,Georg
 .top{padding-bottom:0;max-width:1500px}
 h1{font-size:clamp(30px,4vw,44px);line-height:1.05;font-weight:600;margin:0 0 8px;text-wrap:balance}
 h2{font-size:21px;line-height:1.2;font-weight:600;margin:0 0 8px;text-wrap:balance}
+.ver{font-size:15px;font-weight:400;color:var(--mut);vertical-align:middle;white-space:nowrap}
+.views{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 0}
+.views button.on{background:var(--pruT);border-color:var(--pru);font-weight:600}
 h3{font-size:16px;font-weight:600;margin:18px 0 6px}
 .lede{margin:0;color:var(--mut);max-width:72ch}
 .work{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:24px;align-items:start;max-width:1500px}
@@ -136,8 +139,9 @@ tbody tr.sel{background:var(--pruT)}
 </head>
 <body>
 <header class="band top">
-  <h1>Knockdown scorer</h1>
-  <p class="lede">Tracks the fly in every well, finds when each one stops walking for good, and reads the plate temperature from the video overlay at that moment. Everything runs in this browser: the video is never uploaded.</p>
+  <h1>Knockdown scorer <span class="ver">v10 · 25 Nov 2026</span></h1>
+  <p class="lede" style="margin-bottom:0">Tracks the fly in every well, finds when each one stops walking for good, and reads the plate temperature from the video overlay at that moment. Everything runs in this browser: the video is never uploaded.</p>
+  <div class="views" role="tablist"><button role="tab" data-view="analyse" class="on" aria-selected="true">Analyse a video</button><button role="tab" data-view="combine" aria-selected="false">Combine videos</button></div>
 </header>
 
 <main class="band work">
@@ -267,7 +271,7 @@ tbody tr.sel{background:var(--pruT)}
 </main>
 
 <section class="band results" id="results" hidden>
-  <div class="rhead"><h2 id="rTitle">Results</h2><div class="exp"><button id="bCopy">Copy table</button><button id="bCsv" hidden>Download CSV</button></div></div>
+  <div class="rhead"><h2 id="rTitle">Results</h2><div class="exp"><button id="bAddComb" class="pri">Add to combined set</button><button id="bCopy">Copy table</button><button id="bCsv" hidden>Download CSV</button></div></div>
   <p class="mut" id="expMsg"></p>
   <div class="tabs" role="tablist"><button role="tab" data-tab="tWells" class="on" aria-selected="true">Wells</button><button role="tab" data-tab="tGroups" aria-selected="false">Groups</button><button role="tab" data-tab="tAct" aria-selected="false">Activity</button></div>
   <div id="tWells">
@@ -318,6 +322,37 @@ tbody tr.sel{background:var(--pruT)}
   <p class="mut" id="pmMsg">Activity is counted only while the fly is standing. Dots = flies, diamond = mean ± SE.</p>
   <div class="fig" id="pmFig" style="min-height:340px"><svg id="pmPlot" role="img" aria-label="Per-fly activity by group"></svg></div>
   <div class="scroll"><table id="pmTbl"></table></div>
+  </div>
+</section>
+
+<section class="band results" id="combine" hidden>
+  <div class="rhead"><h2>Combine videos</h2><div class="exp"><label class="btn" for="cFile">Load CSV files</label><input type="file" id="cFile" accept=".csv,.txt,.tsv,text/csv" multiple hidden><button id="cCopy">Copy combined table</button><button id="cCsv" hidden>Download combined CSV</button><button id="cClear">Remove all</button></div></div>
+  <p class="mut">Pool flies from several videos. After analysing a video, press <b>Add to combined set</b> above its results; the set is kept in this browser. Or load CSV files this app exported (knockdown, per-fly activity, activity), from any computer: they are grouped by video file name.</p>
+  <p class="mut" id="cMsg"></p>
+  <div class="scroll"><table id="cList"></table></div>
+  <p class="help" id="cEmpty">No videos yet.</p>
+  <div id="cBody" hidden>
+    <h2 id="cTitle" style="margin-top:24px"></h2>
+    <div class="actctl">
+      <label class="lbl">Along the axis<select id="cX"><option value="treatment">Treatment</option><option value="genotype">Genotype</option><option value="sex">Sex</option><option value="video">Video</option><option value="none">All flies</option></select></label>
+      <label class="lbl">Colour by<select id="cC"><option value="sex">Sex</option><option value="treatment">Treatment</option><option value="genotype">Genotype</option><option value="video">Video</option><option value="none">Nothing</option></select></label>
+      <label class="lbl" style="width:220px">Knockdown temperature<select id="cT"><option value="overlay">Read on the overlay</option><option value="ramp">Smoothed ramp</option></select></label>
+      <button id="cGCopy">Copy group summary</button>
+    </div>
+    <h3>Knockdown temperature by group (dots = flies, diamond = mean ± SE)</h3>
+    <div class="fig" style="min-height:380px"><svg id="cPlot" role="img" aria-label="Pooled knockdown temperature by group"></svg></div>
+    <div class="scroll"><table id="cTbl"></table></div>
+    <h3>Flies still standing, by group</h3>
+    <div class="fig" style="min-height:300px"><svg id="cCurve" role="img" aria-label="Pooled percent standing by group"></svg></div>
+    <h3>Activity, one value per fly</h3>
+    <div class="actctl">
+      <label class="lbl" style="width:260px">Measure<select id="cMetric"><option value="win">Mean activity in the temperature window</option><option value="peak">Peak activity (best 1-min window)</option><option value="tpeak">Temperature at peak activity</option></select></label>
+      <label class="lbl">Activity scale<select id="cLog"><option value="lin">Linear</option><option value="log">log2(1 + x)</option></select></label>
+    </div>
+    <p class="mut" id="cPfMsg"></p>
+    <div class="fig" style="min-height:340px"><svg id="cPfPlot" role="img" aria-label="Pooled per-fly activity"></svg></div>
+    <h3>Activity of flies still standing against temperature (mean ± SE)</h3>
+    <div class="fig" style="min-height:300px"><svg id="cAct" role="img" aria-label="Pooled activity against temperature"></svg></div>
   </div>
 </section>
 
@@ -562,7 +597,7 @@ function setPhase(p) {
   S.phase = p; document.body.dataset.phase = p;
   $('#pEmpty').hidden = !(p === 'empty' || p === 'loading');
   $('#pSetup').hidden = p !== 'setup'; $('#pRun').hidden = p !== 'running'; $('#pReview').hidden = p !== 'review';
-  $('#results').hidden = p !== 'review'; drop.hidden = p !== 'empty';
+  $('#results').hidden = p !== 'review' || !$('#combine').hidden; drop.hidden = p !== 'empty';
   const det = $('#detSet'), lab = $('#labSet'); if (p === 'review') { $('#reviewSetSlot').appendChild(lab); $('#reviewSetSlot').appendChild(det); } else { $('#setupSetSlot').appendChild(lab); $('#setupSetSlot').appendChild(det); }
   renderLabTable();
   $('#pApply').hidden = p !== 'review';
@@ -1333,12 +1368,13 @@ function drawCurve() {
 
 /* ---------- export ---------- */
 let DL = null;
-function initDownloads() { try { if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { DL = d || null; $('#bCsv').hidden = !DL; $('#aCsv').hidden = !DL; $('#gCsv').hidden = !DL; $('#pmCsv').hidden = !DL; }).catch(() => {}); } catch (e) {} }
-$('#bCsv').hidden = false; $('#aCsv').hidden = false; $('#gCsv').hidden = false; $('#pmCsv').hidden = false;
+function initDownloads() { try { if (window.claude && typeof window.claude.use === 'function') window.claude.use('downloads').then(d => { DL = d || null; $('#bCsv').hidden = !DL; $('#aCsv').hidden = !DL; $('#gCsv').hidden = !DL; $('#pmCsv').hidden = !DL; $('#cCsv').hidden = !DL; }).catch(() => {}); } catch (e) {} }
+$('#bCsv').hidden = false; $('#aCsv').hidden = false; $('#gCsv').hidden = false; $('#pmCsv').hidden = false; $('#cCsv').hidden = false;
+initDownloads(); setTimeout(() => { if (!DL) initDownloads(); }, 1500);
 const csvCell = v => { const s = String(v == null ? '' : v); return /[",\n\t]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 function resultsMatrix() {
-  const head = ['well', 'row', 'column', 'genotype', 'treatment', 'sex', 'status', 'knockdown_temp_C', 'smoothed_ramp_temp_C', 'temp_at_end_if_alive_C', 'video_time_s', 'video_time', 'frame', 't_min', 'method', 'check'];
-  return [head].concat(rowsOut().map(r => [r.well, r.row, r.col, r.genotype, r.treatment, r.sex, r.status, r.temp, r.rampT, r.end, r.vt, r.vtf, r.frame, r.tmin, r.src, r.flags]));
+  const head = ['video', 'well', 'row', 'column', 'genotype', 'treatment', 'sex', 'status', 'knockdown_temp_C', 'smoothed_ramp_temp_C', 'temp_at_end_if_alive_C', 'video_time_s', 'video_time', 'frame', 't_min', 'method', 'check'];
+  return [head].concat(rowsOut().map(r => [baseName(), r.well, r.row, r.col, r.genotype, r.treatment, r.sex, r.status, r.temp, r.rampT, r.end, r.vt, r.vtf, r.frame, r.tmin, r.src, r.flags]));
 }
 const baseName = () => (S.file ? S.file.name.replace(/\.[^.]+$/, '') : 'video');
 async function copyText(txt, msgEl) {
@@ -1547,19 +1583,19 @@ function drawActivityCharts() {
 function perFlyMatrix() {
   if (!ACT) return null;
   const AG = actGroups(), keyOf = id => AG.keys.find(k => AG.members[k].some(w => w.id === id)) || '', lo = $('#pmLo').value, hi = $('#pmHi').value, l2 = v => fin(v) ? Math.log2(1 + v).toFixed(3) : '';
-  return [['well', 'genotype', 'treatment', 'sex', 'group', 'status', 'knockdown_temp_C', 'window_from_C', 'window_to_C', 'mean_activity_in_window_BL_per_min', 'log2_1p_mean_activity_in_window', 'peak_activity_BL_per_min', 'log2_1p_peak_activity', 'temp_at_peak_C']]
-    .concat(perFly().map(r => { const L = labelOf(r.id), e = eff(S.res[r.id]); return [r.id, L.genotype, L.treatment, L.sex, keyOf(r.id), r.status === 'never' ? 'no knockdown call' : STATUS[r.status], e.status === 'kd' ? fmtC(e.temp) : '', lo, hi, fin(r.win) ? r.win.toFixed(2) : '', l2(r.win), fin(r.peak) ? r.peak.toFixed(2) : '', l2(r.peak), fin(r.tpk) ? r.tpk.toFixed(2) : '']; }));
+  return [['video', 'well', 'genotype', 'treatment', 'sex', 'group', 'status', 'knockdown_temp_C', 'window_from_C', 'window_to_C', 'mean_activity_in_window_BL_per_min', 'log2_1p_mean_activity_in_window', 'peak_activity_BL_per_min', 'log2_1p_peak_activity', 'temp_at_peak_C']]
+    .concat(perFly().map(r => { const L = labelOf(r.id), e = eff(S.res[r.id]); return [baseName(), r.id, L.genotype, L.treatment, L.sex, keyOf(r.id), r.status === 'never' ? 'no knockdown call' : STATUS[r.status], e.status === 'kd' ? fmtC(e.temp) : '', lo, hi, fin(r.win) ? r.win.toFixed(2) : '', l2(r.win), fin(r.peak) ? r.peak.toFixed(2) : '', l2(r.peak), fin(r.tpk) ? r.tpk.toFixed(2) : '']; }));
 }
 $('#pmCopy').addEventListener('click', () => { const M = perFlyMatrix(); if (M) copyText(M.map(r => r.join('\t')).join('\n'), $('#pmMsg')); });
 $('#pmCsv').addEventListener('click', () => { const M = perFlyMatrix(); if (M) saveCsv(baseName() + '_activity_per_fly.csv', M, $('#pmMsg')); });
 function activityMatrix() {
   if (!ACT) return null;
-  const head = ['well', 'genotype', 'treatment', 'sex', 'bin', 'bin_start_video_s', 'bin_start', 'temp_start_C', 'temp_mid_C', 'distance_body_lengths'].concat(ACT.mmPerPx ? ['distance_mm'] : []).concat(['pct_time_moving', 'standing_at_bin_end']);
+  const head = ['video', 'well', 'genotype', 'treatment', 'sex', 'bin', 'bin_start_video_s', 'bin_start', 'temp_start_C', 'temp_mid_C', 'distance_body_lengths'].concat(ACT.mmPerPx ? ['distance_mm'] : []).concat(['pct_time_moving', 'standing_at_bin_end']);
   const out = [head];
   for (const w of ACT.wells) for (let b = 0; b < ACT.nb; b++) {
     const st = ACT.ts + b * ACT.bin, be = st + ACT.bin, d = w.dist[b];
     const L = labelOf(w.id);
-    out.push([w.id, L.genotype, L.treatment, L.sex, b + 1, st.toFixed(1), fmtT(st), fmtC(ACT.tempStart[b]), fmtC(ACT.tempMid[b]), fin(d) ? d.toFixed(2) : ''].concat(ACT.mmPerPx ? [fin(d) ? (d * S.BL * ACT.mmPerPx).toFixed(2) : ''] : []).concat([fin(w.pct[b]) ? w.pct[b].toFixed(0) : '', fin(w.kd) && w.kd < be ? 0 : 1]));
+    out.push([baseName(), w.id, L.genotype, L.treatment, L.sex, b + 1, st.toFixed(1), fmtT(st), fmtC(ACT.tempStart[b]), fmtC(ACT.tempMid[b]), fin(d) ? d.toFixed(2) : ''].concat(ACT.mmPerPx ? [fin(d) ? (d * S.BL * ACT.mmPerPx).toFixed(2) : ''] : []).concat([fin(w.pct[b]) ? w.pct[b].toFixed(0) : '', fin(w.kd) && w.kd < be ? 0 : 1]));
   }
   return out;
 }
@@ -1672,77 +1708,180 @@ document.querySelector('.tabs').addEventListener('click', e => {
 });
 /* ---------- groups ---------- */
 const PAL = ['#c1121f', '#0b4f8a', '#b7791f', '#4a5568', '#7b2cbf', '#2f855a', '#d53f8c', '#2c7a7b'];
-function groupData() {
-  const fx = $('#gX').value, fc = $('#gC').value;
-  const flies = rowsOut().filter(r => ['kd', 'active', 'never'].includes(r.e.status)).map(r => { const L = labelOf(r.well); return { r, L, x: fx === 'none' ? 'All flies' : (L[fx] || '(unlabelled)'), c: fc === 'none' ? '' : (L[fc] || '(unlabelled)') }; });
-  const xs = [...new Set(flies.map(f => f.x))].sort(), cs = [...new Set(flies.map(f => f.c))].sort();
-  const groups = [];
+const FX = { genotype: 'Genotype', treatment: 'Treatment', sex: 'Sex', video: 'Video' };
+// flies: [{ id, L: {genotype, treatment, sex, video}, kd: bool, temp }]
+function groupData(fx, fc, flies) {
+  flies = flies.map(f => Object.assign({}, f, { x: fx === 'none' ? 'All flies' : (f.L[fx] || '(unlabelled)'), c: fc === 'none' ? '' : (f.L[fc] || '(unlabelled)') }));
+  const xs = [...new Set(flies.map(f => f.x))].sort(), cs = [...new Set(flies.map(f => f.c))].sort(), groups = [];
   for (const x of xs) for (const c of cs) {
     const fl = flies.filter(f => f.x === x && f.c === c); if (!fl.length) continue;
-    const v = fl.filter(f => f.r.e.status === 'kd' && fin(f.r.e.temp)).map(f => f.r.e.temp), n = v.length;
+    const down = fl.filter(f => f.kd && fin(f.temp)), v = down.map(f => f.temp), n = v.length;
     const mean = n ? v.reduce((a, b) => a + b, 0) / n : NaN, sd = n > 1 ? Math.sqrt(v.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1)) : NaN;
-    groups.push({ x, c, fl, v, n, alive: fl.filter(f => f.r.e.status !== 'kd').length, mean, sd, se: n > 1 ? sd / Math.sqrt(n) : NaN, med: median(v) });
+    groups.push({ x, c, fl, down, v, n, alive: fl.length - n, mean, sd, se: n > 1 ? sd / Math.sqrt(n) : NaN, med: median(v) });
   }
   return { fx, fc, xs, cs, groups };
 }
+const curFlies = () => rowsOut().filter(r => ['kd', 'active', 'never'].includes(r.e.status)).map(r => ({ id: r.well, L: Object.assign({ video: baseName() }, labelOf(r.well)), kd: r.e.status === 'kd', temp: r.e.temp }));
 function renderGroups() {
   if (S.phase !== 'review' || $('#tGroups').hidden) return;
-  const G = groupData(), svg = $('#gPlot'), W = svg.clientWidth, H = svg.clientHeight;
   $('#gMsg').textContent = hasLabels() ? '' : 'No labels yet: open “Genotype, treatment and sex” in the panel beside the video and type the label of each row.';
-  const all = G.groups.flatMap(g => g.v);
-  if (W && H && all.length) {
-    const lo = Math.min(...all), hi = Math.max(...all), pad = Math.max(0.05, (hi - lo) * 0.08), a = lo - pad, b = hi + pad;
-    const pl = 54, pr = G.cs.length > 1 ? 130 : 14, pt = 12, pb = 44, pw = W - pl - pr, ph = H - pt - pb;
-    const Y = v => pt + (1 - (v - a) / (b - a)) * ph, bw = pw / G.xs.length, nc = G.cs.length;
-    const col = c => PAL[G.cs.indexOf(c) % PAL.length];
-    const yt = axisTicks(a, b, 6);
-    let o = '<g stroke="var(--line)">' + yt.map(v => '<line x1="' + pl + '" x2="' + (pl + pw) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>').join('') + '</g>';
-    o += '<g fill="var(--mut)" font-size="12" text-anchor="end">' + yt.map(v => '<text x="' + (pl - 6) + '" y="' + (Y(v) + 4) + '">' + v.toFixed(1) + '</text>').join('') + '</g>';
-    o += '<text transform="translate(14 ' + (pt + ph / 2) + ') rotate(-90)" fill="var(--mut)" font-size="12" text-anchor="middle">Knockdown temperature (°C)</text>';
-    G.xs.forEach((x, xi) => { o += '<text x="' + (pl + bw * (xi + 0.5)) + '" y="' + (pt + ph + 20) + '" fill="var(--ink)" font-size="13" font-weight="600" text-anchor="middle">' + esc(x) + '</text>'; });
-    o += '<text x="' + (pl + pw / 2) + '" y="' + (H - 4) + '" fill="var(--mut)" font-size="12" text-anchor="middle">' + (G.fx === 'none' ? '' : FACT[G.fx]) + '</text>';
-    for (const g of G.groups) {
-      const xi = G.xs.indexOf(g.x), ci = G.cs.indexOf(g.c), cx = pl + bw * xi + bw * (nc > 1 ? (0.2 + 0.6 * ci / (nc - 1)) : 0.5), cl = col(g.c);
-      g.v.forEach((v, i) => { const jx = cx - 10 + ((i * 37) % 9) * 1.4; o += '<circle cx="' + jx.toFixed(1) + '" cy="' + Y(v).toFixed(1) + '" r="4.5" fill="' + cl + '" fill-opacity=".55"><title>' + esc(g.fl.filter(f => f.r.e.status === 'kd')[i] ? g.fl.filter(f => f.r.e.status === 'kd')[i].r.well : '') + ' ' + v.toFixed(2) + ' °C</title></circle>'; });
-      if (fin(g.mean)) {
-        const mx = cx + 12, se = fin(g.se) ? g.se : 0;
-        o += '<g stroke="' + cl + '" stroke-width="1.8"><line x1="' + mx + '" x2="' + mx + '" y1="' + Y(g.mean + se) + '" y2="' + Y(g.mean - se) + '"/><line x1="' + (mx - 6) + '" x2="' + (mx + 6) + '" y1="' + Y(g.mean + se) + '" y2="' + Y(g.mean + se) + '"/><line x1="' + (mx - 6) + '" x2="' + (mx + 6) + '" y1="' + Y(g.mean - se) + '" y2="' + Y(g.mean - se) + '"/></g>';
-        o += '<path d="M' + mx + ' ' + (Y(g.mean) - 7) + 'l7 7l-7 7l-7-7z" fill="' + cl + '"><title>mean ' + g.mean.toFixed(2) + ' ± ' + se.toFixed(2) + ' °C (n=' + g.n + ')</title></path>';
-      }
-    }
-    if (nc > 1) o += G.cs.map((c, i) => '<g transform="translate(' + (pl + pw + 18) + ' ' + (pt + 10 + i * 22) + ')"><path d="M0 -6l6 6l-6 6l-6-6z" transform="translate(6 0)" fill="' + col(c) + '"/><text x="18" y="4" font-size="13" fill="var(--ink)">' + esc(c) + '</text></g>').join('') + '<text x="' + (pl + pw + 18) + '" y="' + (pt - 0) + '" font-size="12" fill="var(--mut)"></text>';
-    svg.innerHTML = o;
-  } else if (W && H) svg.innerHTML = '<text x="12" y="24" fill="currentColor">No knocked-down flies to plot.</text>';
-  $('#gTbl').innerHTML = '<thead><tr><th>' + (G.fx === 'none' ? 'Group' : FACT[G.fx]) + '</th>' + (G.fc === 'none' ? '' : '<th>' + FACT[G.fc] + '</th>') + '<th class="n">n down</th><th class="n">still up</th><th class="n">Mean °C</th><th class="n">SD</th><th class="n">SE</th><th class="n">Median</th><th>Wells</th></tr></thead><tbody>' +
-    G.groups.map(g => '<tr><td>' + esc(g.x) + '</td>' + (G.fc === 'none' ? '' : '<td>' + esc(g.c) + '</td>') + '<td class="n">' + g.n + '</td><td class="n">' + g.alive + '</td><td class="n">' + fmtC(g.mean) + '</td><td class="n">' + fmtC(g.sd) + '</td><td class="n">' + fmtC(g.se) + '</td><td class="n">' + fmtC(g.med) + '</td><td>' + esc(g.fl.map(f => f.r.well).join(' ')) + '</td></tr>').join('') + '</tbody>';
-  drawGroupCurves(G);
+  const G = groupData($('#gX').value, $('#gC').value, curFlies());
+  drawGroupPlot($('#gPlot'), G, 'Knockdown temperature (°C)'); groupTable($('#gTbl'), G); drawGroupCurves($('#gCurve'), G, S.rampOK.map(r => r.temp), '°C on the overlay');
 }
-function drawGroupCurves(G) {
-  const svg = $('#gCurve'), W = svg.clientWidth, H = svg.clientHeight; if (!W || !H) return;
-  const temps = S.rampOK.map(r => r.temp), all = G.groups.flatMap(g => g.v), lo = Math.min(...temps, ...all), hi = Math.max(...temps, ...all);
+function drawGroupPlot(svg, G, ylab) {
+  const W = svg.clientWidth, H = svg.clientHeight, all = G.groups.flatMap(g => g.v);
+  if (!W || !H) return;
+  if (!all.length) { svg.innerHTML = '<text x="12" y="24" fill="currentColor">No knocked-down flies to plot.</text>'; return; }
+  const lo = Math.min(...all), hi = Math.max(...all), pad = Math.max(0.05, (hi - lo) * 0.08), a = lo - pad, b = hi + pad;
+  const pl = 54, pr = G.cs.length > 1 ? 150 : 14, pt = 12, pb = 44, pw = W - pl - pr, ph = H - pt - pb;
+  const Y = v => pt + (1 - (v - a) / (b - a)) * ph, bw = pw / G.xs.length, nc = G.cs.length, col = c => PAL[G.cs.indexOf(c) % PAL.length], yt = axisTicks(a, b, 6);
+  let o = '<g stroke="var(--line)">' + yt.map(v => '<line x1="' + pl + '" x2="' + (pl + pw) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>').join('') + '</g>';
+  o += '<g fill="var(--mut)" font-size="12" text-anchor="end">' + yt.map(v => '<text x="' + (pl - 6) + '" y="' + (Y(v) + 4) + '">' + v.toFixed(1) + '</text>').join('') + '</g>';
+  o += '<text transform="translate(14 ' + (pt + ph / 2) + ') rotate(-90)" fill="var(--mut)" font-size="12" text-anchor="middle">' + esc(ylab) + '</text>';
+  G.xs.forEach((x, xi) => { o += '<text x="' + (pl + bw * (xi + 0.5)) + '" y="' + (pt + ph + 20) + '" fill="var(--ink)" font-size="13" font-weight="600" text-anchor="middle">' + esc(x) + '</text>'; });
+  o += '<text x="' + (pl + pw / 2) + '" y="' + (H - 4) + '" fill="var(--mut)" font-size="12" text-anchor="middle">' + (G.fx === 'none' ? '' : FX[G.fx]) + '</text>';
+  for (const g of G.groups) {
+    const xi = G.xs.indexOf(g.x), ci = G.cs.indexOf(g.c), cx = pl + bw * xi + bw * (nc > 1 ? (0.2 + 0.6 * ci / (nc - 1)) : 0.5), cl = col(g.c), spread = Math.min(26, bw / Math.max(2, nc) * 0.5);
+    g.down.forEach((f, i) => { const jx = cx - spread / 2 - 6 + ((i * 37) % 11) / 10 * spread; o += '<circle cx="' + jx.toFixed(1) + '" cy="' + Y(f.temp).toFixed(1) + '" r="4.5" fill="' + cl + '" fill-opacity=".55"><title>' + esc(f.id + (f.L.video && G.fx !== 'video' && G.fc !== 'video' ? ' (' + f.L.video + ')' : '')) + ' ' + f.temp.toFixed(2) + ' °C</title></circle>'; });
+    if (fin(g.mean)) {
+      const mx = cx + 12, se = fin(g.se) ? g.se : 0;
+      o += '<g stroke="' + cl + '" stroke-width="1.8"><line x1="' + mx + '" x2="' + mx + '" y1="' + Y(g.mean + se) + '" y2="' + Y(g.mean - se) + '"/><line x1="' + (mx - 6) + '" x2="' + (mx + 6) + '" y1="' + Y(g.mean + se) + '" y2="' + Y(g.mean + se) + '"/><line x1="' + (mx - 6) + '" x2="' + (mx + 6) + '" y1="' + Y(g.mean - se) + '" y2="' + Y(g.mean - se) + '"/></g>';
+      o += '<path d="M' + mx + ' ' + (Y(g.mean) - 7) + 'l7 7l-7 7l-7-7z" fill="' + cl + '"><title>mean ' + g.mean.toFixed(2) + ' ± ' + se.toFixed(2) + ' °C (n=' + g.n + ')</title></path>';
+    }
+  }
+  if (nc > 1) o += G.cs.map((c, i) => '<g transform="translate(' + (pl + pw + 18) + ' ' + (pt + 10 + i * 22) + ')"><path d="M0 -6l6 6l-6 6l-6-6z" transform="translate(6 0)" fill="' + col(c) + '"/><text x="18" y="4" font-size="13" fill="var(--ink)">' + esc(c) + '</text></g>').join('');
+  svg.innerHTML = o;
+}
+function groupTable(tbl, G) {
+  tbl.innerHTML = '<thead><tr><th>' + (G.fx === 'none' ? 'Group' : FX[G.fx]) + '</th>' + (G.fc === 'none' ? '' : '<th>' + FX[G.fc] + '</th>') + '<th class="n">n down</th><th class="n">still up</th><th class="n">Mean °C</th><th class="n">SD</th><th class="n">SE</th><th class="n">Median</th><th>Flies</th></tr></thead><tbody>' +
+    G.groups.map(g => '<tr><td>' + esc(g.x) + '</td>' + (G.fc === 'none' ? '' : '<td>' + esc(g.c) + '</td>') + '<td class="n">' + g.n + '</td><td class="n">' + g.alive + '</td><td class="n">' + fmtC(g.mean) + '</td><td class="n">' + fmtC(g.sd) + '</td><td class="n">' + fmtC(g.se) + '</td><td class="n">' + fmtC(g.med) + '</td><td style="white-space:normal">' + esc(g.fl.length > 24 ? g.fl.length + ' flies' : g.fl.map(f => f.id).join(' ')) + '</td></tr>').join('') + '</tbody>';
+}
+function drawGroupCurves(svg, G, extraTemps, xlab) {
+  const W = svg.clientWidth, H = svg.clientHeight; if (!W || !H) return;
+  const all = G.groups.flatMap(g => g.v), lo = Math.min(...extraTemps, ...all), hi = Math.max(...extraTemps, ...all);
   if (!fin(lo) || !fin(hi)) { svg.innerHTML = ''; return; }
-  const a = Math.floor((lo - 0.05) * 10) / 10, b = Math.ceil((hi + 0.05) * 10) / 10, pl = 44, pr = 150, pt = 14, pb = 34, pw = W - pl - pr, ph = H - pt - pb;
+  const a = Math.floor((lo - 0.05) * 10) / 10, b = Math.ceil((hi + 0.05) * 10) / 10, pl = 44, pr = 170, pt = 14, pb = 34, pw = W - pl - pr, ph = H - pt - pb;
   const X = v => pl + (v - a) / (b - a) * pw, Y = p => pt + (1 - p / 100) * ph, xt = axisTicks(a, b, W < 600 ? 4 : 8);
   const keys = G.groups.map(g => (G.fx === 'none' ? '' : g.x) + (G.fc === 'none' ? '' : (G.fx === 'none' ? '' : ' · ') + g.c) || 'All flies');
   const dash = ['', '6 4', '2 3', '10 3 2 3'];
-  let o = '<g stroke="var(--line)">' + [0, 50, 100].map(p => '<line x1="' + pl + '" x2="' + (pl + pw) + '" y1="' + Y(p) + '" y2="' + Y(p) + '"/>').join('') + '</g><g fill="var(--mut)" font-size="12" text-anchor="end">' + [0, 50, 100].map(p => '<text x="' + (pl - 6) + '" y="' + (Y(p) + 4) + '">' + p + '%</text>').join('') + '</g><g fill="var(--mut)" font-size="12" text-anchor="middle">' + xt.map(v => '<text x="' + X(v) + '" y="' + (pt + ph + 18) + '">' + v.toFixed(v % 1 ? 1 : 0) + '</text>').join('') + '<text x="' + (pl + pw / 2) + '" y="' + (H - 2) + '">°C on the overlay</text></g>';
+  let o = '<g stroke="var(--line)">' + [0, 50, 100].map(p => '<line x1="' + pl + '" x2="' + (pl + pw) + '" y1="' + Y(p) + '" y2="' + Y(p) + '"/>').join('') + '</g><g fill="var(--mut)" font-size="12" text-anchor="end">' + [0, 50, 100].map(p => '<text x="' + (pl - 6) + '" y="' + (Y(p) + 4) + '">' + p + '%</text>').join('') + '</g><g fill="var(--mut)" font-size="12" text-anchor="middle">' + xt.map(v => '<text x="' + X(v) + '" y="' + (pt + ph + 18) + '">' + v.toFixed(v % 1 ? 1 : 0) + '</text>').join('') + '<text x="' + (pl + pw / 2) + '" y="' + (H - 2) + '">' + esc(xlab) + '</text></g>';
   G.groups.forEach((g, i) => {
     const N = g.fl.length, v = g.v.slice().sort((p, q) => p - q); let d = 'M' + X(a) + ' ' + Y(100), up = N;
     for (const t of v) { d += 'H' + X(t); up--; d += 'V' + Y(up / N * 100); } d += 'H' + X(b);
     const cl = PAL[(G.fc === 'none' ? i : G.cs.indexOf(g.c)) % PAL.length], da = G.fc === 'none' ? '' : dash[G.xs.indexOf(g.x) % dash.length];
     o += '<path d="' + d + '" fill="none" stroke="' + cl + '" stroke-width="2.2"' + (da ? ' stroke-dasharray="' + da + '"' : '') + '/>';
-    o += '<g transform="translate(' + (pl + pw + 14) + ' ' + (pt + 8 + i * 20) + ')"><line x1="0" x2="22" y1="0" y2="0" stroke="' + cl + '" stroke-width="2.2"' + (da ? ' stroke-dasharray="' + da + '"' : '') + '/><text x="28" y="4" font-size="12" fill="var(--ink)">' + esc(keys[i]) + '</text></g>';
+    o += '<g transform="translate(' + (pl + pw + 14) + ' ' + (pt + 8 + i * 20) + ')"><line x1="0" x2="22" y1="0" y2="0" stroke="' + cl + '" stroke-width="2.2"' + (da ? ' stroke-dasharray="' + da + '"' : '') + '/><text x="28" y="4" font-size="12" fill="var(--ink)">' + esc(keys[i]) + ' (n=' + N + ')</text></g>';
   });
   svg.innerHTML = o;
 }
 ['gX', 'gC'].forEach(id => $('#' + id).addEventListener('change', renderGroups));
-function groupMatrix() {
-  const G = groupData();
-  return [[G.fx === 'none' ? 'group' : G.fx].concat(G.fc === 'none' ? [] : [G.fc], ['n_knocked_down', 'n_still_up', 'mean_C', 'sd_C', 'se_C', 'median_C', 'wells'])]
-    .concat(G.groups.map(g => [g.x].concat(G.fc === 'none' ? [] : [g.c], [g.n, g.alive, fmtC(g.mean), fmtC(g.sd), fmtC(g.se), fmtC(g.med), g.fl.map(f => f.r.well).join(' ')])));
-}
+const groupMatrixOf = G => [[G.fx === 'none' ? 'group' : G.fx].concat(G.fc === 'none' ? [] : [G.fc], ['n_knocked_down', 'n_still_up', 'mean_C', 'sd_C', 'se_C', 'median_C', 'flies'])]
+  .concat(G.groups.map(g => [g.x].concat(G.fc === 'none' ? [] : [g.c], [g.n, g.alive, fmtC(g.mean), fmtC(g.sd), fmtC(g.se), fmtC(g.med), g.fl.map(f => f.id).join(' ')])));
+const groupMatrix = () => groupMatrixOf(groupData($('#gX').value, $('#gC').value, curFlies()));
 $('#gCopy').addEventListener('click', () => copyText(groupMatrix().map(r => r.join('\t')).join('\n'), $('#gMsg')));
 $('#gCsv').addEventListener('click', () => saveCsv(baseName() + '_groups.csv', groupMatrix(), $('#gMsg')));
+
+/* ---------- combine several videos ---------- */
+const VERSION = 'v10 · 25 Nov 2026';
+document.title = 'Knockdown scorer ' + VERSION.split(' ·')[0];
+const COMB = { sets: store.get('combined', []) };
+const saveComb = () => { try { localStorage.setItem('kd1.combined', JSON.stringify(COMB.sets)); return true; } catch (e) { return false; } };
+const num = v => { const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return fin(x) ? x : null; };
+const normStatus = s => /knocked/i.test(s) ? 'kd' : /moving|alive/i.test(s) ? 'active' : /never|no knockdown/i.test(s) ? 'never' : 'off';
+function setOf(video) { let d = COMB.sets.find(x => x.video === video); if (!d) { d = { video, added: new Date().toISOString().slice(0, 10), flies: [], perfly: [], act: [] }; COMB.sets.push(d); } return d; }
+// the current video's results, per-fly values and binned activity
+$('#bAddComb').addEventListener('click', () => {
+  const v = baseName(), d = setOf(v);
+  d.added = new Date().toISOString().slice(0, 10);
+  d.flies = rowsOut().filter(r => ['kd', 'active', 'never'].includes(r.e.status)).map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: r.sex, status: r.e.status, temp: r.e.status === 'kd' ? num(r.temp) : null, ramp: num(r.rampT) }));
+  if (ACT) {
+    d.perfly = perFly().map(r => { const L = labelOf(r.id); return { well: r.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, status: r.status, win: r.win, peak: r.peak, tpk: r.tpk, lo: num($('#pmLo').value), hi: num($('#pmHi').value) }; });
+    d.act = []; for (const w of ACT.wells) { if (w.status === 'never') continue; const L = labelOf(w.id); for (let b = 0; b < ACT.nb; b++) { const be = ACT.ts + (b + 1) * ACT.bin; if (fin(w.dist[b])) d.act.push({ well: w.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, tmid: ACT.tempMid[b], perMin: w.dist[b] * 60 / ACT.bin, standing: !(fin(w.kd) && w.kd < be) }); } }
+  }
+  const ok = saveComb();
+  $('#expMsg').textContent = ok ? 'Added “' + v + '” to the combined set (' + COMB.sets.length + ' video' + (COMB.sets.length > 1 ? 's' : '') + '). Open “Combine videos” at the top to see them together.' : 'The browser refused to store more data; download the CSVs and load them in “Combine videos” instead.';
+  renderComb();
+});
+// CSV files exported by this app: knockdown results, per-fly activity or binned activity
+function readCsv(text) {
+  const lines = String(text).replace(/^﻿/, '').split(/\r?\n/).filter(l => l.trim());
+  const delim = ['\t', ';', ','].sort((a, b) => lines[0].split(b).length - lines[0].split(a).length)[0];
+  const split = l => { const out = []; let cur = '', q = false; for (let i = 0; i < l.length; i++) { const ch = l[i]; if (q) { if (ch === '"' && l[i + 1] === '"') { cur += '"'; i++; } else if (ch === '"') q = false; else cur += ch; } else if (ch === '"') q = true; else if (ch === delim) { out.push(cur.trim()); cur = ''; } else cur += ch; } out.push(cur.trim()); return out; };
+  const head = split(lines[0]).map(h => h.toLowerCase());
+  return lines.slice(1).map(l => { const c = split(l), o = {}; head.forEach((h, i) => { o[h] = c[i] == null ? '' : c[i]; }); return o; });
+}
+$('#cFile').addEventListener('change', async e => {
+  const files = [...e.target.files]; e.target.value = ''; const msg = []; let added = 0;
+  for (const f of files) {
+    try {
+      const rows = readCsv(await f.text()); if (!rows.length) { msg.push(f.name + ': empty'); continue; }
+      const h = Object.keys(rows[0]), fallback = f.name.replace(/\.[^.]+$/, '').replace(/_(knockdown|activity_per_fly|activity|groups)$/i, '');
+      const vid = r => r.video || fallback, byVid = {};
+      for (const r of rows) (byVid[vid(r)] = byVid[vid(r)] || []).push(r);
+      for (const v in byVid) {
+        const d = setOf(v), R = byVid[v];
+        if (h.includes('mean_activity_in_window_bl_per_min')) d.perfly = R.map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), status: normStatus(r.status), win: num(r.mean_activity_in_window_bl_per_min), peak: num(r.peak_activity_bl_per_min), tpk: num(r.temp_at_peak_c), lo: num(r.window_from_c), hi: num(r.window_to_c) }));
+        else if (h.includes('distance_body_lengths') && h.includes('temp_mid_c')) { const bins = new Set(R.map(r => r.bin_start_video_s)); d.act = R.filter(r => num(r.distance_body_lengths) != null).map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), tmid: num(r.temp_mid_c), perMin: num(r.distance_body_lengths) * 60 / (binSecs(R) || 60), standing: String(r.standing_at_bin_end) !== '0' })); }
+        else if (h.includes('knockdown_temp_c') && h.includes('status')) d.flies = R.map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), status: normStatus(r.status), temp: num(r.knockdown_temp_c), ramp: num(r.smoothed_ramp_temp_c) })).filter(r => r.status !== 'off');
+        else { msg.push(f.name + ': not a file exported by this app'); continue; }
+        added++;
+      }
+    } catch (err) { msg.push(f.name + ': ' + err.message); }
+  }
+  saveComb(); $('#cMsg').textContent = (added ? 'Loaded ' + added + ' table' + (added > 1 ? 's' : '') + '. ' : '') + msg.join('; '); renderComb();
+});
+function binSecs(R) { const t = [...new Set(R.map(r => num(r.bin_start_video_s)).filter(fin))].sort((a, b) => a - b); return t.length > 1 ? t[1] - t[0] : 60; }
+$('#cList').addEventListener('click', e => { const b = e.target.closest('button[data-rm]'); if (!b) return; COMB.sets = COMB.sets.filter(d => d.video !== b.dataset.rm); saveComb(); renderComb(); });
+$('#cClear').addEventListener('click', () => { if (!COMB.sets.length) return; COMB.sets = []; saveComb(); renderComb(); });
+['cX', 'cC', 'cT', 'cLog', 'cMetric'].forEach(id => $('#' + id).addEventListener('change', renderComb));
+const lbl = (r, video) => ({ genotype: r.genotype || '', treatment: r.treatment || '', sex: normSex(r.sex) || '', video });
+function combFlies() {
+  const useRamp = $('#cT').value === 'ramp';
+  return COMB.sets.flatMap(d => d.flies.map(r => ({ id: r.well + ' · ' + d.video, L: lbl(r, d.video), kd: r.status === 'kd', temp: useRamp && fin(r.ramp) ? r.ramp : r.temp })));
+}
+function combKey(L, fx, fc) { return [fx === 'none' ? '' : L[fx], fc === 'none' ? '' : (fc === 'sex' ? (L.sex === 'male' ? '♂' : L.sex === 'female' ? '♀' : L.sex) : L[fc])].filter(Boolean).join(' · ') || 'All flies'; }
+function renderComb() {
+  const list = $('#cList');
+  list.innerHTML = COMB.sets.length ? '<thead><tr><th>Video</th><th class="n">Flies</th><th class="n">Knocked down</th><th>Groups</th><th class="n">Activity values</th><th>Added</th><th></th></tr></thead><tbody>' + COMB.sets.map(d => {
+    const gk = [...new Set(d.flies.map(r => combKey(lbl(r, d.video), 'treatment', 'sex')))].join(', ');
+    return '<tr><td>' + esc(d.video) + '</td><td class="n">' + d.flies.length + '</td><td class="n">' + d.flies.filter(r => r.status === 'kd').length + '</td><td style="white-space:normal">' + esc(gk) + '</td><td class="n">' + (d.perfly.length ? d.perfly.length + ' flies' : '–') + (d.act.length ? ', curves' : '') + '</td><td>' + esc(d.added || '') + '</td><td><button data-rm="' + esc(d.video) + '" aria-label="Remove ' + esc(d.video) + '">Remove</button></td></tr>';
+  }).join('') + '</tbody>' : '';
+  $('#cEmpty').hidden = COMB.sets.length > 0; $('#cBody').hidden = !COMB.sets.length;
+  if (!COMB.sets.length || $('#combine').hidden) return;
+  const fx = $('#cX').value, fc = $('#cC').value, flies = combFlies(), G = groupData(fx, fc, flies);
+  const tl = $('#cT').value === 'ramp' ? 'smoothed ramp' : 'overlay';
+  $('#cTitle').textContent = flies.length + ' flies from ' + COMB.sets.length + ' video' + (COMB.sets.length > 1 ? 's' : '') + ', ' + flies.filter(f => f.kd).length + ' knocked down';
+  drawGroupPlot($('#cPlot'), G, 'Knockdown temperature (°C, ' + tl + ')'); groupTable($('#cTbl'), G);
+  drawGroupCurves($('#cCurve'), G, [], '°C (' + tl + ')');
+  // per-fly activity, pooled
+  const LOG = $('#cLog').value === 'log', tf = v => LOG ? Math.log2(1 + v) : v, metric = $('#cMetric').value;
+  const pf = COMB.sets.flatMap(d => d.perfly.filter(r => r.status !== 'never').map(r => ({ id: r.well + ' · ' + d.video, L: lbl(r, d.video), v: metric === 'win' ? r.win : metric === 'peak' ? r.peak : r.tpk, lo: r.lo, hi: r.hi })));
+  const wins = [...new Set(COMB.sets.filter(d => d.perfly.length).map(d => (d.perfly[0].lo ?? '?') + '–' + (d.perfly[0].hi ?? '?')))];
+  $('#cPfMsg').textContent = !pf.length ? 'No per-fly activity values yet: add videos after analysing them, or load their per-fly activity CSVs.' : (metric === 'win' && wins.length > 1 ? 'Careful: the videos use different temperature windows (' + wins.join(', ') + ' °C). Use the same window in each video before adding it.' : (metric === 'win' ? 'Window ' + wins[0] + ' °C.' : ''));
+  const keys = [...new Set(pf.map(r => combKey(r.L, fx, fc)))].sort();
+  dotPlot($('#cPfPlot'), keys.map((k, i) => ({ k, color: PAL[i % PAL.length], vals: pf.filter(r => combKey(r.L, fx, fc) === k).map(r => [r.id, fin(r.v) && metric !== 'tpeak' ? tf(r.v) : r.v]) })), metric === 'tpeak' ? 'temperature at peak activity (°C)' : (LOG ? 'log2(1 + body lengths per min)' : 'body lengths per min') + (metric === 'win' ? ', window' : ', best minute'), v => (+v).toFixed(2));
+  // activity against temperature (flies still standing), pooled in 0.1 °C steps
+  const act = COMB.sets.flatMap(d => d.act.filter(r => r.standing && fin(r.tmid) && fin(r.perMin)).map(r => ({ L: lbl(r, d.video), t: Math.round(r.tmid * 10) / 10, v: tf(r.perMin) })));
+  const ak = [...new Set(act.map(r => combKey(r.L, fx, fc)))].sort();
+  lineChart($('#cAct'), ak.map((k, i) => { const rs = act.filter(r => combKey(r.L, fx, fc) === k), ts = [...new Set(rs.map(r => r.t))].sort((a, b) => a - b); return { k, color: PAL[i % PAL.length], pts: ts.map(t => { const [m, se, n] = meanSE(rs.filter(r => r.t === t).map(r => r.v)); return [t, m, se, n]; }) }; }), { xlab: '°C (smoothed ramp, 0.1 °C steps)', ylab: LOG ? 'log2(1 + body lengths per min)' : 'body lengths per min', xfmt: v => v.toFixed(1) });
+}
+function combMatrix() {
+  const out = [['video', 'well', 'genotype', 'treatment', 'sex', 'status', 'knockdown_temp_C', 'smoothed_ramp_temp_C', 'mean_activity_in_window_BL_per_min', 'peak_activity_BL_per_min', 'temp_at_peak_C', 'window_from_C', 'window_to_C']];
+  for (const d of COMB.sets) for (const r of d.flies) { const p = d.perfly.find(x => x.well === r.well) || {}; out.push([d.video, r.well, r.genotype, r.treatment, r.sex, STATUS[r.status] || r.status, fin(r.temp) ? fmtC(r.temp) : '', fin(r.ramp) ? fmtC(r.ramp) : '', fin(p.win) ? p.win.toFixed(2) : '', fin(p.peak) ? p.peak.toFixed(2) : '', fin(p.tpk) ? fmtC(p.tpk) : '', p.lo ?? '', p.hi ?? '']); }
+  return out;
+}
+$('#cCopy').addEventListener('click', () => copyText(combMatrix().map(r => r.join('\t')).join('\n'), $('#cMsg')));
+$('#cCsv').addEventListener('click', () => saveCsv('combined_knockdown.csv', combMatrix(), $('#cMsg')));
+$('#cGCopy').addEventListener('click', () => copyText(groupMatrixOf(groupData($('#cX').value, $('#cC').value, combFlies())).map(r => r.join('\t')).join('\n'), $('#cMsg')));
+// switching between analysing one video and the combined view
+document.querySelector('.views').addEventListener('click', e => {
+  const b = e.target.closest('button[data-view]'); if (!b) return;
+  const comb = b.dataset.view === 'combine';
+  for (const x of document.querySelectorAll('.views button')) { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); }
+  $('#combine').hidden = !comb; $('main.work').hidden = comb; $('#results').hidden = comb || S.phase !== 'review';
+  if (comb) { vid.pause(); requestAnimationFrame(renderComb); } else requestAnimationFrame(() => { draw(); drawCurve(); renderGroups(); drawActivity(); });
+});
+renderComb();
 
 /* ---------- start ---------- */
 syncSetupInputs(); setPhase('empty');

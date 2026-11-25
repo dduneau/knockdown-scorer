@@ -20,6 +20,15 @@ The **Activity** tab shows walking per group: a heatmap, the mean of flies still
 activity aligned to each fly's knockdown, and one value per fly (mean activity in a temperature window, peak activity,
 temperature at the peak). Activity can be shown on a linear or log2(1 + x) scale.
 
+**Combine videos** (button at the top) pools flies from several videos. After analysing a video, press
+**Add to combined set**; the set is kept in your browser until you remove it. You can also load the CSV files the app
+exported (knockdown, per-fly activity, activity), from any computer; each export has a `video` column, and older
+exports without it are named from the file name. The combined view draws knockdown temperature by group, % still
+standing, per-fly activity and activity against temperature, with *Video* available as a grouping, and exports one
+combined table. Use the same temperature window in every video before comparing per-fly activity.
+
+The version shown next to the title (and in the browser tab) tells you which build GitHub Pages is serving.
+
 Chrome or Edge recommended (Safari 15.4+ and recent Firefox should also work).
 
 ## Host it on GitHub Pages
