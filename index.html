@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Knockdown scorer v12</title>
+<title>Knockdown scorer v13</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,9 +27,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Literata,Georg
 .top{padding-bottom:0;max-width:1500px}
 h1{font-size:clamp(30px,4vw,44px);line-height:1.05;font-weight:600;margin:0 0 8px;text-wrap:balance}
 h2{font-size:21px;line-height:1.2;font-weight:600;margin:0 0 8px;text-wrap:balance}
-.stat{margin:6px 0 26px;padding:12px 14px;border:1px solid var(--line);border-radius:8px}
-.stat>.mut{margin:0 0 0 12px;font-size:14px}
-.stOut h4{font-size:15px;margin:16px 0 4px}.stOut .stModel{font-size:14px;color:var(--mut);margin:0 0 8px}
+.stbox{margin:6px 0 26px;padding:12px 14px;border:1px solid var(--line);border-radius:8px}
+.stbox>.mut{margin:0 0 0 12px;font-size:14px}
+.stOut{overflow-x:auto}.stOut h4{font-size:15px;margin:16px 0 4px}.stOut .stModel{font-size:14px;color:var(--mut);margin:0 0 8px}
 .stGrid{display:flex;flex-wrap:wrap;gap:8px 28px;align-items:flex-start}.stGrid>table{width:auto}
 .stTbl{width:auto;font-size:14px;margin:4px 0 10px}.stTbl td,.stTbl th{padding:4px 10px}.stTbl tr.sig td{font-weight:600}
 .warn{color:var(--car);font-size:14px;margin:8px 0}
@@ -113,6 +113,7 @@ summary{cursor:pointer;font-weight:600;min-height:32px}
 .thumbs figure{margin:0;cursor:pointer}.thumbs canvas{width:100%;aspect-ratio:1;border-radius:6px;background:#0b0d12;display:block}
 .thumbs figcaption{font-size:12px;color:var(--mut);text-align:center}
 .fig{position:relative;min-height:300px}.fig>svg,.fig>canvas{position:absolute;inset:0;width:100%;height:100%}
+.fig.chart{width:100%;max-width:980px;aspect-ratio:2/1}.fig.dots{width:100%;max-width:1100px;aspect-ratio:12/5}
 .fig.trace{min-height:150px;cursor:crosshair}
 .ocrrow{display:grid;grid-template-columns:minmax(0,1fr) 130px;gap:10px;align-items:end;margin-top:6px}
 .ocrrow img{width:100%;border-radius:6px;background:#000;min-height:30px}
@@ -145,7 +146,7 @@ tbody tr.sel{background:var(--pruT)}
 </head>
 <body>
 <header class="band top">
-  <h1>Knockdown scorer <span class="ver">v12 · 25 Nov 2026</span></h1>
+  <h1>Knockdown scorer <span class="ver">v13 · 25 Nov 2026</span></h1>
   <p class="lede" style="margin-bottom:0">Tracks the fly in every well, finds when each one stops walking for good, and reads the plate temperature from the video overlay at that moment. Everything runs in this browser: the video is never uploaded.</p>
   <div class="views" role="tablist"><button role="tab" data-view="analyse" class="on" aria-selected="true">Analyse a video</button><button role="tab" data-view="combine" aria-selected="false">Combine videos</button></div>
 </header>
@@ -295,12 +296,12 @@ tbody tr.sel{background:var(--pruT)}
       <button id="gCopy">Copy group summary</button><button id="gCsv" hidden>Download group summary</button>
     </div>
     <h3>Knockdown temperature by group (dots = flies, diamond = mean ± SE)</h3>
-    <div class="fig" id="gFig" style="min-height:380px"><svg id="gPlot" role="img" aria-label="Knockdown temperature by group"></svg></div>
+    <div class="fig dots" id="gFig" style="min-height:380px"><svg id="gPlot" role="img" aria-label="Knockdown temperature by group"></svg></div>
     <div class="scroll"><table id="gTbl"></table></div>
-    <div class="stat" data-st="gKd"><button class="stRun">Run statistics</button><span class="mut">Linear model on the knockdown temperatures (one value per fly): the effect of each factor, their interaction, and the differences along the axis. Flies still standing at the end are left out; the curves below include them.</span><div class="stOut"></div></div>
+    <div class="stbox" data-st="gKd"><button class="stRun">Run statistics</button><span class="mut">Linear model on the knockdown temperatures (one value per fly): the effect of each factor, their interaction, and the differences along the axis. Flies still standing at the end are left out; the curves below include them.</span><div class="stOut"></div></div>
     <h3>Flies still standing, by group</h3>
-    <div class="fig" id="gCurveFig"><svg id="gCurve" role="img" aria-label="Percent standing by group"></svg></div>
-    <div class="stat" data-st="gSurv"><button class="stRun">Run statistics</button><span class="mut">Log-rank test: compares whole curves, counting flies still standing at the end as censored.</span><div class="stOut"></div></div>
+    <div class="fig chart" id="gCurveFig"><svg id="gCurve" role="img" aria-label="Percent standing by group"></svg></div>
+    <div class="stbox" data-st="gSurv"><button class="stRun">Run statistics</button><span class="mut">Log-rank test: compares whole curves, counting flies still standing at the end as censored.</span><div class="stOut"></div></div>
   </div>
   <div id="tAct" hidden>
   <h2 style="margin-top:8px">Activity</h2>
@@ -316,20 +317,20 @@ tbody tr.sel{background:var(--pruT)}
   <div class="heat" id="heatFig"><canvas id="heat" aria-label="Activity heatmap"></canvas></div>
   <h3>Flies still standing: mean ± SE against temperature</h3>
   <p class="mut">Each point averages the flies of a group that are still standing, over a sliding window one bin wide (moved a quarter bin at a time). The band is ± SE; hover a point for the number of flies. Flies without a knockdown call are left out.</p>
-  <div class="fig" id="actFig" style="min-height:280px"><svg id="actCurve" role="img" aria-label="Mean activity versus temperature"></svg></div>
-  <div class="stat" data-st="a_act"><button class="stRun">Run statistics</button><span class="mut">Summarises each fly by its activity level and how fast it changes with temperature, then compares groups on those per-fly values.</span><div class="stOut"></div></div>
+  <div class="fig chart" id="actFig" style="min-height:280px"><svg id="actCurve" role="img" aria-label="Mean activity versus temperature"></svg></div>
+  <div class="stbox" data-st="a_act"><button class="stRun">Run statistics</button><span class="mut">Summarises each fly by its activity level and how fast it changes with temperature, then compares groups on those per-fly values.</span><div class="stOut"></div></div>
   <h3>How often flies walk</h3>
   <p class="mut">Share of seconds in which a standing fly walked (at least 0.2 body lengths per second), same sliding window. This is the “how often” part of activity.</p>
-  <div class="fig" style="min-height:280px"><svg id="pctCurve" role="img" aria-label="Percent of time walking versus temperature"></svg></div>
-  <div class="stat" data-st="a_pct"><button class="stRun">Run statistics</button><span class="mut">Same approach: per-fly level and change per °C of the time spent walking.</span><div class="stOut"></div></div>
+  <div class="fig chart" style="min-height:280px"><svg id="pctCurve" role="img" aria-label="Percent of time walking versus temperature"></svg></div>
+  <div class="stbox" data-st="a_pct"><button class="stRun">Run statistics</button><span class="mut">Same approach: per-fly level and change per °C of the time spent walking.</span><div class="stOut"></div></div>
   <h3>Speed while walking</h3>
   <p class="mut">Mean speed over the seconds in which the fly walked, in body lengths per second (windows with fewer than 3 walking seconds are left out). This is the “how fast” part of activity.</p>
-  <div class="fig" style="min-height:280px"><svg id="spdCurve" role="img" aria-label="Walking speed versus temperature"></svg></div>
-  <div class="stat" data-st="a_spd"><button class="stRun">Run statistics</button><span class="mut">Same approach: per-fly level and change per °C of the walking speed.</span><div class="stOut"></div></div>
+  <div class="fig chart" style="min-height:280px"><svg id="spdCurve" role="img" aria-label="Walking speed versus temperature"></svg></div>
+  <div class="stbox" data-st="a_spd"><button class="stRun">Run statistics</button><span class="mut">Same approach: per-fly level and change per °C of the walking speed.</span><div class="stOut"></div></div>
   <h3>Activity before knockdown</h3>
   <p class="mut">Each fly lined up on its own knockdown (0 = knockdown); activity over the preceding 30 s, mean ± SE per group. Shows how activity changes in the run-up to collapse, whatever the temperature at which it happens.</p>
-  <div class="fig" id="alFig" style="min-height:280px"><svg id="alCurve" role="img" aria-label="Activity aligned to knockdown"></svg></div>
-  <div class="stat" data-st="aAl"><button class="stRun">Run statistics</button><span class="mut">Compares the activity shortly before collapse, and how sharply it falls in the last 2 min, between groups.</span><div class="stOut"></div></div>
+  <div class="fig chart" id="alFig" style="min-height:280px"><svg id="alCurve" role="img" aria-label="Activity aligned to knockdown"></svg></div>
+  <div class="stbox" data-st="aAl"><button class="stRun">Run statistics</button><span class="mut">Compares the activity shortly before collapse, and how sharply it falls in the last 2 min, between groups.</span><div class="stOut"></div></div>
   <h3>One value per fly</h3>
   <div class="actctl">
     <label class="lbl" style="width:260px">Measure<select id="pmMetric"><option value="win">Mean activity in a temperature window</option><option value="peak">Peak activity (best 1-min window)</option><option value="tpeak">Temperature at peak activity</option><option value="pwin">% of time walking in the window</option><option value="swin">Walking speed in the window</option></select></label>
@@ -338,8 +339,8 @@ tbody tr.sel{background:var(--pruT)}
     <button id="pmGo">Update</button><button id="pmCopy">Copy per-fly table</button><button id="pmCsv" hidden>Download per-fly CSV</button>
   </div>
   <p class="mut" id="pmMsg">Activity is counted only while the fly is standing. Dots = flies, diamond = mean ± SE.</p>
-  <div class="fig" id="pmFig" style="min-height:340px"><svg id="pmPlot" role="img" aria-label="Per-fly activity by group"></svg></div>
-  <div class="stat" data-st="aPf"><button class="stRun">Run statistics</button><span class="mut">Linear model on the plotted value (one per fly).</span><div class="stOut"></div></div>
+  <div class="fig dots" id="pmFig" style="min-height:340px"><svg id="pmPlot" role="img" aria-label="Per-fly activity by group"></svg></div>
+  <div class="stbox" data-st="aPf"><button class="stRun">Run statistics</button><span class="mut">Linear model on the plotted value (one per fly).</span><div class="stOut"></div></div>
   <div class="scroll"><table id="pmTbl"></table></div>
   </div>
 </section>
@@ -359,29 +360,29 @@ tbody tr.sel{background:var(--pruT)}
       <button id="cGCopy">Copy group summary</button>
     </div>
     <h3>Knockdown temperature by group (dots = flies, diamond = mean ± SE)</h3>
-    <div class="fig" style="min-height:380px"><svg id="cPlot" role="img" aria-label="Pooled knockdown temperature by group"></svg></div>
+    <div class="fig dots" style="min-height:380px"><svg id="cPlot" role="img" aria-label="Pooled knockdown temperature by group"></svg></div>
     <div class="scroll"><table id="cTbl"></table></div>
-    <div class="stat" data-st="cKd"><button class="stRun">Run statistics</button><span class="mut">Linear model on the knockdown temperatures, with video as a block when several videos are pooled.</span><div class="stOut"></div></div>
+    <div class="stbox" data-st="cKd"><button class="stRun">Run statistics</button><span class="mut">Linear model on the knockdown temperatures, with video as a block when several videos are pooled.</span><div class="stOut"></div></div>
     <h3>Flies still standing, by group</h3>
-    <div class="fig" style="min-height:300px"><svg id="cCurve" role="img" aria-label="Pooled percent standing by group"></svg></div>
-    <div class="stat" data-st="cSurv"><button class="stRun">Run statistics</button><span class="mut">Log-rank test stratified by video; flies still standing at the end count as censored.</span><div class="stOut"></div></div>
+    <div class="fig chart" style="min-height:300px"><svg id="cCurve" role="img" aria-label="Pooled percent standing by group"></svg></div>
+    <div class="stbox" data-st="cSurv"><button class="stRun">Run statistics</button><span class="mut">Log-rank test stratified by video; flies still standing at the end count as censored.</span><div class="stOut"></div></div>
     <h3>Activity, one value per fly</h3>
     <div class="actctl">
       <label class="lbl" style="width:260px">Measure<select id="cMetric"><option value="win">Mean activity in the temperature window</option><option value="peak">Peak activity (best 1-min window)</option><option value="tpeak">Temperature at peak activity</option><option value="pwin">% of time walking in the window</option><option value="swin">Walking speed in the window</option></select></label>
       <label class="lbl">Activity scale<select id="cLog"><option value="lin">Linear</option><option value="log">log2(1 + x)</option></select></label>
     </div>
     <p class="mut" id="cPfMsg"></p>
-    <div class="fig" style="min-height:340px"><svg id="cPfPlot" role="img" aria-label="Pooled per-fly activity"></svg></div>
-    <div class="stat" data-st="cPf"><button class="stRun">Run statistics</button><span class="mut">Linear model on the plotted value, with video as a block.</span><div class="stOut"></div></div>
+    <div class="fig dots" style="min-height:340px"><svg id="cPfPlot" role="img" aria-label="Pooled per-fly activity"></svg></div>
+    <div class="stbox" data-st="cPf"><button class="stRun">Run statistics</button><span class="mut">Linear model on the plotted value, with video as a block.</span><div class="stOut"></div></div>
     <h3>Activity of flies still standing against temperature (mean ± SE)</h3>
-    <div class="fig" style="min-height:300px"><svg id="cAct" role="img" aria-label="Pooled activity against temperature"></svg></div>
-    <div class="stat" data-st="c_act"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C, compared between groups with video as a block.</span><div class="stOut"></div></div>
+    <div class="fig chart" style="min-height:300px"><svg id="cAct" role="img" aria-label="Pooled activity against temperature"></svg></div>
+    <div class="stbox" data-st="c_act"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C, compared between groups with video as a block.</span><div class="stOut"></div></div>
     <h3>How often flies walk, against temperature</h3>
-    <div class="fig" style="min-height:300px"><svg id="cPct" role="img" aria-label="Pooled percent of time walking against temperature"></svg></div>
-    <div class="stat" data-st="c_pct"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C of the time spent walking.</span><div class="stOut"></div></div>
+    <div class="fig chart" style="min-height:300px"><svg id="cPct" role="img" aria-label="Pooled percent of time walking against temperature"></svg></div>
+    <div class="stbox" data-st="c_pct"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C of the time spent walking.</span><div class="stOut"></div></div>
     <h3>Speed while walking, against temperature</h3>
-    <div class="fig" style="min-height:300px"><svg id="cSpd" role="img" aria-label="Pooled walking speed against temperature"></svg></div>
-    <div class="stat" data-st="c_spd"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C of the walking speed.</span><div class="stOut"></div></div>
+    <div class="fig chart" style="min-height:300px"><svg id="cSpd" role="img" aria-label="Pooled walking speed against temperature"></svg></div>
+    <div class="stbox" data-st="c_spd"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C of the walking speed.</span><div class="stOut"></div></div>
   </div>
 </section>
 
@@ -574,7 +575,7 @@ const endDrag = () => {
 };
 ov.addEventListener('pointerup', endDrag); ov.addEventListener('pointercancel', endDrag);
 function hitWell(vx, vy) { let best = null, bd = 1e9; for (const w of S.wells) { const d = Math.hypot(w.x - vx, w.y - vy); if (d < w.rad && d < bd) { bd = d; best = w; } } return best; }
-new ResizeObserver(() => { draw(); drawTrace(); drawCurve(); drawActivity(); }).observe(document.body);
+new ResizeObserver(() => { draw(); drawTrace(); drawCurve(); drawActivity(); renderGroups(); if (!$('#combine').hidden) renderComb(); }).observe(document.body);
 const themeRedraw = () => requestAnimationFrame(() => { drawTrace(); drawActivity(); });
 new MutationObserver(themeRedraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeRedraw); } catch (e) {}
@@ -1837,7 +1838,7 @@ $('#gCopy').addEventListener('click', () => copyText(groupMatrix().map(r => r.jo
 $('#gCsv').addEventListener('click', () => saveCsv(baseName() + '_groups.csv', groupMatrix(), $('#gMsg')));
 
 /* ---------- combine several videos ---------- */
-const VERSION = 'v12 · 25 Nov 2026';
+const VERSION = 'v13 · 25 Nov 2026';
 document.title = 'Knockdown scorer ' + VERSION.split(' ·')[0];
 const COMB = { sets: store.get('combined', []) };
 const saveComb = () => { try { localStorage.setItem('kd1.combined', JSON.stringify(COMB.sets)); return true; } catch (e) { return false; } };
@@ -2139,11 +2140,11 @@ const ST = {};
 const sigOf = x => JSON.stringify(x, (k, v) => typeof v === 'number' ? +v.toFixed(4) : v);
 document.addEventListener('click', e => {
   const b = e.target.closest('.stRun'); if (!b) return;
-  const box = b.closest('.stat'), r = ST[box.dataset.st]();
+  const box = b.closest('.stbox'), r = ST[box.dataset.st]();
   try { box.querySelector('.stOut').innerHTML = r.html(); box.dataset.sig = r.sig; } catch (err) { console.error(err); box.querySelector('.stOut').innerHTML = '<p class="mut">The statistics could not be computed: ' + esc(err.message || err) + '</p>'; }
 });
 function staleStats(scope) {
-  for (const box of scope.querySelectorAll('.stat[data-sig]')) {
+  for (const box of scope.querySelectorAll('.stbox[data-sig]')) {
     let s = null; try { s = ST[box.dataset.st]().sig; } catch (e) {}
     if (s !== box.dataset.sig) { box.querySelector('.stOut').innerHTML = '<p class="mut">The data or the grouping changed: run the statistics again.</p>'; delete box.dataset.sig; }
   }
