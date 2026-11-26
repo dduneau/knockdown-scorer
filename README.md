@@ -31,9 +31,15 @@ combined table. Use the same temperature window in every video before comparing 
 - *Knockdown temperature*: linear model with the two plotted factors and their interaction (type II F tests), group means,
   and the differences along the axis within each colour group (Holm-adjusted). Video is a block when videos are pooled.
 - *% still standing*: log-rank test on the knockdown temperature (flies still up at the end are censored), stratified by video.
-- *Activity, how often flies walk, speed while walking*: each fly is summarised by a straight line through its own 20-s
-  windows while standing (last minute before knockdown left out): its level at a temperature all flies were standing at,
-  and its change per °C; groups are compared on these per-fly values with the same linear model.
+- *Activity, how often flies walk, speed while walking*: **Fit curves (GAM)** fits a generalized additive model on
+  one-minute bins: a smooth curve of temperature for each group, a smooth curve for each fly (so flies, not minutes, are
+  the unit), and video as a random effect when videos are pooled (Tweedie for distance, binomial for walking seconds,
+  Gamma for walking speed; P-splines, smoothing chosen by REML-type Fellner–Schall updates). It shows the fitted curves of
+  a typical fly with 95 % intervals, the differences between groups with simultaneous bands, and curve features with
+  95 % intervals from 2000 draws: level at the start, onset of the rise (10 %), half rise, peak temperature and level,
+  steepest fall, fall to half the peak, breadth. Each fly's last minute before knockdown is left out, and a group's curve
+  stops where fewer than 30 % of its flies are still standing. Record from well below the temperatures of interest
+  (e.g. from 20 °C) so the rise, peak and fall are all in the data.
 - *Activity before knockdown*: activity 4–2 min before knockdown, and the log2 change into the last 2 min.
 - *One value per fly*: the same linear model on the plotted value, with a warning when flies went down inside the window.
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Knockdown scorer v13</title>
+<title>Knockdown scorer v14</title>
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -146,7 +146,7 @@ tbody tr.sel{background:var(--pruT)}
 </head>
 <body>
 <header class="band top">
-  <h1>Knockdown scorer <span class="ver">v13 · 25 Nov 2026</span></h1>
+  <h1>Knockdown scorer <span class="ver">v14 · 25 Nov 2026</span></h1>
   <p class="lede" style="margin-bottom:0">Tracks the fly in every well, finds when each one stops walking for good, and reads the plate temperature from the video overlay at that moment. Everything runs in this browser: the video is never uploaded.</p>
   <div class="views" role="tablist"><button role="tab" data-view="analyse" class="on" aria-selected="true">Analyse a video</button><button role="tab" data-view="combine" aria-selected="false">Combine videos</button></div>
 </header>
@@ -318,15 +318,15 @@ tbody tr.sel{background:var(--pruT)}
   <h3>Flies still standing: mean ± SE against temperature</h3>
   <p class="mut">Each point averages the flies of a group that are still standing, over a sliding window one bin wide (moved a quarter bin at a time). The band is ± SE; hover a point for the number of flies. Flies without a knockdown call are left out.</p>
   <div class="fig chart" id="actFig" style="min-height:280px"><svg id="actCurve" role="img" aria-label="Mean activity versus temperature"></svg></div>
-  <div class="stbox" data-st="a_act"><button class="stRun">Run statistics</button><span class="mut">Summarises each fly by its activity level and how fast it changes with temperature, then compares groups on those per-fly values.</span><div class="stOut"></div></div>
+  <div class="stbox" data-st="a_act"><button class="stRun">Fit curves (GAM)</button><span class="mut">Fits a smooth curve of activity against temperature for each group (and one per fly), then compares the shapes: onset of the rise, peak, fall. Takes a few seconds.</span><div class="stOut"></div></div>
   <h3>How often flies walk</h3>
   <p class="mut">Share of seconds in which a standing fly walked (at least 0.2 body lengths per second), same sliding window. This is the “how often” part of activity.</p>
   <div class="fig chart" style="min-height:280px"><svg id="pctCurve" role="img" aria-label="Percent of time walking versus temperature"></svg></div>
-  <div class="stbox" data-st="a_pct"><button class="stRun">Run statistics</button><span class="mut">Same approach: per-fly level and change per °C of the time spent walking.</span><div class="stOut"></div></div>
+  <div class="stbox" data-st="a_pct"><button class="stRun">Fit curves (GAM)</button><span class="mut">Fits a smooth curve of time spent walking against temperature for each group (and one per fly), then compares the shapes: onset of the rise, peak, fall. Takes a few seconds.</span><div class="stOut"></div></div>
   <h3>Speed while walking</h3>
   <p class="mut">Mean speed over the seconds in which the fly walked, in body lengths per second (windows with fewer than 3 walking seconds are left out). This is the “how fast” part of activity.</p>
   <div class="fig chart" style="min-height:280px"><svg id="spdCurve" role="img" aria-label="Walking speed versus temperature"></svg></div>
-  <div class="stbox" data-st="a_spd"><button class="stRun">Run statistics</button><span class="mut">Same approach: per-fly level and change per °C of the walking speed.</span><div class="stOut"></div></div>
+  <div class="stbox" data-st="a_spd"><button class="stRun">Fit curves (GAM)</button><span class="mut">Fits a smooth curve of walking speed against temperature for each group (and one per fly), then compares the shapes: onset of the rise, peak, fall. Takes a few seconds.</span><div class="stOut"></div></div>
   <h3>Activity before knockdown</h3>
   <p class="mut">Each fly lined up on its own knockdown (0 = knockdown); activity over the preceding 30 s, mean ± SE per group. Shows how activity changes in the run-up to collapse, whatever the temperature at which it happens.</p>
   <div class="fig chart" id="alFig" style="min-height:280px"><svg id="alCurve" role="img" aria-label="Activity aligned to knockdown"></svg></div>
@@ -376,13 +376,13 @@ tbody tr.sel{background:var(--pruT)}
     <div class="stbox" data-st="cPf"><button class="stRun">Run statistics</button><span class="mut">Linear model on the plotted value, with video as a block.</span><div class="stOut"></div></div>
     <h3>Activity of flies still standing against temperature (mean ± SE)</h3>
     <div class="fig chart" style="min-height:300px"><svg id="cAct" role="img" aria-label="Pooled activity against temperature"></svg></div>
-    <div class="stbox" data-st="c_act"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C, compared between groups with video as a block.</span><div class="stOut"></div></div>
+    <div class="stbox" data-st="c_act"><button class="stRun">Fit curves (GAM)</button><span class="mut">Smooth curve of activity per group (one per fly, video as a block), and a comparison of their shapes: onset of the rise, peak, fall.</span><div class="stOut"></div></div>
     <h3>How often flies walk, against temperature</h3>
     <div class="fig chart" style="min-height:300px"><svg id="cPct" role="img" aria-label="Pooled percent of time walking against temperature"></svg></div>
-    <div class="stbox" data-st="c_pct"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C of the time spent walking.</span><div class="stOut"></div></div>
+    <div class="stbox" data-st="c_pct"><button class="stRun">Fit curves (GAM)</button><span class="mut">Smooth curve of time spent walking per group (one per fly, video as a block), and a comparison of their shapes: onset of the rise, peak, fall.</span><div class="stOut"></div></div>
     <h3>Speed while walking, against temperature</h3>
     <div class="fig chart" style="min-height:300px"><svg id="cSpd" role="img" aria-label="Pooled walking speed against temperature"></svg></div>
-    <div class="stbox" data-st="c_spd"><button class="stRun">Run statistics</button><span class="mut">Per-fly level and change per °C of the walking speed.</span><div class="stOut"></div></div>
+    <div class="stbox" data-st="c_spd"><button class="stRun">Fit curves (GAM)</button><span class="mut">Smooth curve of walking speed per group (one per fly, video as a block), and a comparison of their shapes: onset of the rise, peak, fall.</span><div class="stOut"></div></div>
   </div>
 </section>
 
@@ -1482,14 +1482,14 @@ function computeActivity() {
       if (q >= 0 && s2 - q <= 5) { const gp = s2 - q, v = Math.hypot(px[s2] - px[q], py[s2] - py[q]) / BL / gp; for (let u = q + 1; u <= s2; u++) sp[u] = v > 0.2 ? v : 0; }
       q = s2;
     }
-    const dist = new Float32Array(nb), pct = new Float32Array(nb).fill(NaN), spd = new Float32Array(nb).fill(NaN);
+    const dist = new Float32Array(nb), pct = new Float32Array(nb).fill(NaN), spd = new Float32Array(nb).fill(NaN), nv = new Int16Array(nb), nw = new Int16Array(nb);
     for (let bI = 0; bI < nb; bI++) {
       let sum = 0, val = 0, mov = 0;
       for (let u = off + bI * bin; u < off + (bI + 1) * bin && u < nall; u++) { const v = sp[u]; if (v === v) { sum += v; val++; if (v > 0) mov++; } }
       dist[bI] = val >= bin * 0.3 ? sum / val * bin : NaN; pct[bI] = val >= bin * 0.3 ? 100 * mov / val : NaN;
-      spd[bI] = val >= bin * 0.3 && mov >= 5 ? sum / mov : NaN;
+      spd[bI] = val >= bin * 0.3 && mov >= 5 ? sum / mov : NaN; nv[bI] = val; nw[bI] = mov;
     }
-    wells.push({ id: w.id, kd: e.status === 'kd' ? e.t : null, status: e.status, dist, pct, spd, sp });
+    wells.push({ id: w.id, kd: e.status === 'kd' ? e.t : null, status: e.status, dist, pct, spd, nv, nw, sp });
   });
   const tempMid = [], tempStart = [];
   for (let bI = 0; bI < nb; bI++) { tempStart.push(tempSm(ts + bI * bin)); tempMid.push(tempSm(ts + (bI + 0.5) * bin)); }
@@ -1645,12 +1645,12 @@ $('#pmCopy').addEventListener('click', () => { const M = perFlyMatrix(); if (M) 
 $('#pmCsv').addEventListener('click', () => { const M = perFlyMatrix(); if (M) saveCsv(baseName() + '_activity_per_fly.csv', M, $('#pmMsg')); });
 function activityMatrix() {
   if (!ACT) return null;
-  const head = ['video', 'well', 'genotype', 'treatment', 'sex', 'bin', 'bin_start_video_s', 'bin_start', 'temp_start_C', 'temp_mid_C', 'distance_body_lengths'].concat(ACT.mmPerPx ? ['distance_mm'] : []).concat(['pct_time_moving', 'walking_speed_BL_per_s', 'standing_at_bin_end']);
+  const head = ['video', 'well', 'genotype', 'treatment', 'sex', 'bin', 'bin_start_video_s', 'bin_start', 'temp_start_C', 'temp_mid_C', 'distance_body_lengths'].concat(ACT.mmPerPx ? ['distance_mm'] : []).concat(['pct_time_moving', 'walking_speed_BL_per_s', 'seconds_with_position', 'seconds_walking', 'standing_at_bin_end']);
   const out = [head];
   for (const w of ACT.wells) for (let b = 0; b < ACT.nb; b++) {
     const st = ACT.ts + b * ACT.bin, be = st + ACT.bin, d = w.dist[b];
     const L = labelOf(w.id);
-    out.push([baseName(), w.id, L.genotype, L.treatment, L.sex, b + 1, st.toFixed(1), fmtT(st), fmtC(ACT.tempStart[b]), fmtC(ACT.tempMid[b]), fin(d) ? d.toFixed(2) : ''].concat(ACT.mmPerPx ? [fin(d) ? (d * S.BL * ACT.mmPerPx).toFixed(2) : ''] : []).concat([fin(w.pct[b]) ? w.pct[b].toFixed(0) : '', fin(w.spd[b]) ? w.spd[b].toFixed(3) : '', fin(w.kd) && w.kd < be ? 0 : 1]));
+    out.push([baseName(), w.id, L.genotype, L.treatment, L.sex, b + 1, st.toFixed(1), fmtT(st), fmtC(ACT.tempStart[b]), fmtC(ACT.tempMid[b]), fin(d) ? d.toFixed(2) : ''].concat(ACT.mmPerPx ? [fin(d) ? (d * S.BL * ACT.mmPerPx).toFixed(2) : ''] : []).concat([fin(w.pct[b]) ? w.pct[b].toFixed(0) : '', fin(w.spd[b]) ? w.spd[b].toFixed(3) : '', w.nv[b], w.nw[b], fin(w.kd) && w.kd < be ? 0 : 1]));
   }
   return out;
 }
@@ -1838,7 +1838,7 @@ $('#gCopy').addEventListener('click', () => copyText(groupMatrix().map(r => r.jo
 $('#gCsv').addEventListener('click', () => saveCsv(baseName() + '_groups.csv', groupMatrix(), $('#gMsg')));
 
 /* ---------- combine several videos ---------- */
-const VERSION = 'v13 · 25 Nov 2026';
+const VERSION = 'v14 · 25 Nov 2026';
 document.title = 'Knockdown scorer ' + VERSION.split(' ·')[0];
 const COMB = { sets: store.get('combined', []) };
 const saveComb = () => { try { localStorage.setItem('kd1.combined', JSON.stringify(COMB.sets)); return true; } catch (e) { return false; } };
@@ -1852,8 +1852,8 @@ $('#bAddComb').addEventListener('click', () => {
   d.flies = rowsOut().filter(r => ['kd', 'active', 'never'].includes(r.e.status)).map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: r.sex, status: r.e.status, temp: r.e.status === 'kd' ? num(r.temp) : null, ramp: num(r.rampT), kdT: r.e.status === 'kd' ? r.e.t : null, end: r.e.status === 'active' ? num(r.e.temp) : null }));
   if (ACT) {
     d.perfly = perFly().map(r => { const L = labelOf(r.id); return { well: r.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, status: r.status, win: r.win, pwin: r.pwin, swin: r.swin, peak: r.peak, tpk: r.tpk, lo: num($('#pmLo').value), hi: num($('#pmHi').value) }; });
-    d.fine = ACT.wells.filter(w => w.status !== 'never').map(w => { const L = labelOf(w.id); return { well: w.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, w: fineWins(w).map(r => r.map(v => fin(v) ? +v.toFixed(3) : null)) }; });
-    d.act = []; for (const w of ACT.wells) { if (w.status === 'never') continue; const L = labelOf(w.id); for (let b = 0; b < ACT.nb; b++) { const be = ACT.ts + (b + 1) * ACT.bin; if (fin(w.dist[b])) d.act.push({ well: w.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, tmid: ACT.tempMid[b], perMin: w.dist[b] * 60 / ACT.bin, pct: w.pct[b], spd: w.spd[b], t: ACT.ts + b * ACT.bin, bin: ACT.bin, standing: !(fin(w.kd) && w.kd < be) }); } }
+    d.mins = ACT.wells.filter(w => w.status !== 'never').map(w => { const L = labelOf(w.id); return { well: w.id, genotype: L.genotype, treatment: L.treatment, sex: L.sex, b: minuteBins(w).filter(r => !(fin(w.kd) && r[4] > w.kd)) }; });
+    d.act = []; delete d.fine;
   }
   const ok = saveComb();
   $('#expMsg').textContent = ok ? 'Added “' + v + '” to the combined set (' + COMB.sets.length + ' video' + (COMB.sets.length > 1 ? 's' : '') + '). Open “Combine videos” at the top to see them together.' : 'The browser refused to store more data; download the CSVs and load them in “Combine videos” instead.';
@@ -1878,7 +1878,7 @@ $('#cFile').addEventListener('change', async e => {
       for (const v in byVid) {
         const d = setOf(v), R = byVid[v];
         if (h.includes('mean_activity_in_window_bl_per_min')) d.perfly = R.map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), status: normStatus(r.status), win: num(r.mean_activity_in_window_bl_per_min), pwin: num(r.pct_time_walking_in_window), swin: num(r.walking_speed_in_window_bl_per_s), peak: num(r.peak_activity_bl_per_min), tpk: num(r.temp_at_peak_c), lo: num(r.window_from_c), hi: num(r.window_to_c) }));
-        else if (h.includes('distance_body_lengths') && h.includes('temp_mid_c')) { const bins = new Set(R.map(r => r.bin_start_video_s)); d.act = R.filter(r => num(r.distance_body_lengths) != null).map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), tmid: num(r.temp_mid_c), perMin: num(r.distance_body_lengths) * 60 / (binSecs(R) || 60), pct: num(r.pct_time_moving), spd: num(r.walking_speed_bl_per_s), t: num(r.bin_start_video_s), bin: binSecs(R), standing: String(r.standing_at_bin_end) !== '0' })); }
+        else if (h.includes('distance_body_lengths') && h.includes('temp_mid_c')) { const bins = new Set(R.map(r => r.bin_start_video_s)); d.act = R.filter(r => num(r.distance_body_lengths) != null).map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), tmid: num(r.temp_mid_c), perMin: num(r.distance_body_lengths) * 60 / (binSecs(R) || 60), pct: num(r.pct_time_moving), spd: num(r.walking_speed_bl_per_s), nV: num(r.seconds_with_position), nW: num(r.seconds_walking), t: num(r.bin_start_video_s), bin: binSecs(R), standing: String(r.standing_at_bin_end) !== '0' })); }
         else if (h.includes('knockdown_temp_c') && h.includes('status')) d.flies = R.map(r => ({ well: r.well, genotype: r.genotype, treatment: r.treatment, sex: normSex(r.sex), status: normStatus(r.status), temp: num(r.knockdown_temp_c), ramp: num(r.smoothed_ramp_temp_c), kdT: num(r.video_time_s), end: num(r.temp_at_end_if_alive_c) })).filter(r => r.status !== 'off');
         else { msg.push(f.name + ': not a file exported by this app'); continue; }
         added++;
@@ -1901,7 +1901,7 @@ function renderComb() {
   const list = $('#cList');
   list.innerHTML = COMB.sets.length ? '<thead><tr><th>Video</th><th class="n">Flies</th><th class="n">Knocked down</th><th>Groups</th><th class="n">Activity values</th><th>Added</th><th></th></tr></thead><tbody>' + COMB.sets.map(d => {
     const gk = [...new Set(d.flies.map(r => combKey(lbl(r, d.video), 'treatment', 'sex')))].join(', ');
-    return '<tr><td>' + esc(d.video) + '</td><td class="n">' + d.flies.length + '</td><td class="n">' + d.flies.filter(r => r.status === 'kd').length + '</td><td style="white-space:normal">' + esc(gk) + '</td><td class="n">' + (d.perfly.length ? d.perfly.length + ' flies' : '–') + (d.act.length ? ', curves' : '') + '</td><td>' + esc(d.added || '') + '</td><td><button data-rm="' + esc(d.video) + '" aria-label="Remove ' + esc(d.video) + '">Remove</button></td></tr>';
+    return '<tr><td>' + esc(d.video) + '</td><td class="n">' + d.flies.length + '</td><td class="n">' + d.flies.filter(r => r.status === 'kd').length + '</td><td style="white-space:normal">' + esc(gk) + '</td><td class="n">' + (d.perfly.length ? d.perfly.length + ' flies' : '–') + ((d.mins && d.mins.length) || d.act.length ? ', curves' : '') + '</td><td>' + esc(d.added || '') + '</td><td><button data-rm="' + esc(d.video) + '" aria-label="Remove ' + esc(d.video) + '">Remove</button></td></tr>';
   }).join('') + '</tbody>' : '';
   $('#cEmpty').hidden = COMB.sets.length > 0; $('#cBody').hidden = !COMB.sets.length;
   if (!COMB.sets.length || $('#combine').hidden) return;
@@ -1918,15 +1918,13 @@ function renderComb() {
   const keys = [...new Set(pf.map(r => combKey(r.L, fx, fc)))].sort();
   dotPlot($('#cPfPlot'), keys.map((k, i) => ({ k, color: PAL[i % PAL.length], vals: pf.filter(r => combKey(r.L, fx, fc) === k).map(r => [r.id, fin(r.v) && (metric === 'win' || metric === 'peak') ? tf(r.v) : r.v]) })), metric === 'tpeak' ? 'temperature at peak activity (°C)' : metric === 'pwin' ? '% of time walking, window' : metric === 'swin' ? 'body lengths per s while walking, window' : (LOG ? 'log2(1 + body lengths per min)' : 'body lengths per min') + (metric === 'win' ? ', window' : ', best minute'), v => (+v).toFixed(2));
   // activity against temperature (flies still standing), pooled in 0.1 °C steps
-  const act = COMB.sets.flatMap(d => d.act.filter(r => r.standing && fin(r.tmid) && fin(r.perMin)).map(r => ({ L: lbl(r, d.video), t: Math.round(r.tmid * 10) / 10, v: tf(r.perMin) })));
-  const ak = [...new Set(act.map(r => combKey(r.L, fx, fc)))].sort();
-  lineChart($('#cAct'), ak.map((k, i) => { const rs = act.filter(r => combKey(r.L, fx, fc) === k), ts = [...new Set(rs.map(r => r.t))].sort((a, b) => a - b); return { k, color: PAL[i % PAL.length], pts: ts.map(t => { const [m, se, n] = meanSE(rs.filter(r => r.t === t).map(r => r.v)); return [t, m, se, n]; }) }; }), { xlab: '°C (smoothed ramp, 0.1 °C steps)', ylab: LOG ? 'log2(1 + body lengths per min)' : 'body lengths per min', xfmt: v => v.toFixed(1) });
-  const pooled = (field, svg, ylab) => {
-    const rows = COMB.sets.flatMap(d => d.act.filter(r => r.standing && fin(r.tmid) && fin(r[field])).map(r => ({ L: lbl(r, d.video), t: Math.round(r.tmid * 10) / 10, v: r[field] })));
-    const ks = [...new Set(rows.map(r => combKey(r.L, fx, fc)))].sort();
-    lineChart(svg, ks.map((k, i) => { const rs = rows.filter(r => combKey(r.L, fx, fc) === k), ts = [...new Set(rs.map(r => r.t))].sort((a, b) => a - b); return { k, color: PAL[i % PAL.length], pts: ts.map(t => { const [m, se, n] = meanSE(rs.filter(r => r.t === t).map(r => r.v)); return [t, m, se, n]; }) }; }), { xlab: '°C (smoothed ramp, 0.1 °C steps)', ylab, xfmt: v => v.toFixed(1) });
+  const pb = COMB.sets.flatMap(d => setBins(d, false).flatMap(f => f.bins.filter(r => fin(r[0]) && r[2] >= 20).map(r => ({ L: f.L, t: Math.round(r[0] * 10) / 10, act: r[1] / r[2] * 60, pct: 100 * r[3] / r[2], spd: r[3] >= 3 ? r[1] / r[3] : NaN }))));
+  const pooled = (field, svg, ylab, tf2) => {
+    const rows = pb.filter(r => fin(r[field])), ks = [...new Set(rows.map(r => combKey(r.L, fx, fc)))].sort();
+    lineChart(svg, ks.map((k, i) => { const rs = rows.filter(r => combKey(r.L, fx, fc) === k), ts = [...new Set(rs.map(r => r.t))].sort((a, b) => a - b); return { k, color: PAL[i % PAL.length], pts: ts.map(t => { const [m, se, n] = meanSE(rs.filter(r => r.t === t).map(r => tf2(r[field]))); return [t, m, se, n]; }) }; }), { xlab: '°C (smoothed ramp, 0.1 °C steps)', ylab, xfmt: v => v.toFixed(1) });
   };
-  pooled('pct', $('#cPct'), '% of time walking'); pooled('spd', $('#cSpd'), 'body lengths per s, while walking');
+  pooled('act', $('#cAct'), LOG ? 'log2(1 + body lengths per min)' : 'body lengths per min', tf);
+  pooled('pct', $('#cPct'), '% of time walking', v => v); pooled('spd', $('#cSpd'), 'body lengths per s, while walking', v => v);
   staleStats($('#combine'));
 }
 function combMatrix() {
@@ -2121,27 +2119,338 @@ function survReport(flies, factors0, focus0, block0) {
   return h;
 }
 // each fly summarised by a straight line through its own bins: level at a common temperature and change per °C
-function lineReport(flies, factors, focus, block, o) {
-  const ok = flies.filter(f => f.pts.length >= 3 && Math.max(...f.pts.map(p => p[0])) - Math.min(...f.pts.map(p => p[0])) >= 0.1);
-  let h = '';
-  if (ok.length < 3) return '<p class="mut">Not enough flies with at least 3 usable windows spanning 0.1 °C (' + ok.length + ' of ' + flies.length + ').</p>';
-  const Tref = Math.floor(Math.min(...ok.map(f => Math.max(...f.pts.map(p => p[0])))) * 10) / 10;
-  const rows = ok.map(f => {
-    const n = f.pts.length, mT = f.pts.reduce((a, p) => a + p[0], 0) / n, my = f.pts.reduce((a, p) => a + p[1], 0) / n;
-    let sxx = 0, sxy = 0; for (const [T, y] of f.pts) { sxx += (T - mT) ** 2; sxy += (T - mT) * (y - my); }
-    const b = sxy / sxx; return { F: f.F, level: my + b * (Tref - mT), slope: b };
-  });
-  h += '<p class="mut">Each fly is summarised by a straight line through its own ' + esc(o.binWord) + ' while standing (its last minute before knockdown left out, as activity collapses then): its level at ' + Tref.toFixed(1) + ' °C, a temperature every fly in the test was still standing at, and its change per °C. ' + ok.length + ' of ' + flies.length + ' flies had enough data (at least 3 windows); flies that went down within about 2 min of the start cannot be summarised this way.</p>';
-  h += lmReport(rows.map(r => ({ F: r.F, y: r.level })), factors, focus, block, { title: 'Level at ' + Tref.toFixed(1) + ' °C', what: o.what + ' at ' + Tref.toFixed(1) + ' °C', unit: o.unit, fmt: o.fmt });
-  h += lmReport(rows.map(r => ({ F: r.F, y: r.slope })), factors, focus, block, { title: 'Change per °C', what: 'change of ' + o.what + ' per °C', unit: o.unit + ' per °C', fmt: o.fmt });
-  return h;
+/* ---------- GAM: P-splines per group + a smooth per fly + video, PIRLS with Fellner-Schall smoothing ---------- */
+// cubic B-spline basis on nseg equal segments over [a, b]: 4 non-zero values starting at column i0 (nseg + 3 columns)
+function bsRow(x, a, b, nseg) {
+  const u = (Math.min(Math.max(x, a), b) - a) / (b - a) * nseg; let j = Math.floor(u); if (j >= nseg) j = nseg - 1; if (j < 0) j = 0;
+  const t = u - j, t2 = t * t, t3 = t2 * t;
+  return { i0: j, v: [(1 - t) ** 3 / 6, (3 * t3 - 6 * t2 + 4) / 6, (-3 * t3 + 3 * t2 + 3 * t + 1) / 6, t3 / 6] };
 }
+function diffPen(K) {   // second-order difference penalty D'D (K x K, flat)
+  const S = new Float64Array(K * K);
+  for (let r = 0; r < K - 2; r++) { const d = [1, -2, 1]; for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) S[(r + a) * K + r + b] += d[a] * d[b]; }
+  return S;
+}
+function nullPen(K) {   // projector onto the null space of D'D (constant and linear in the coefficient index)
+  const P = new Float64Array(K * K), m = (K - 1) / 2; let ss = 0; for (let i = 0; i < K; i++) ss += (i - m) ** 2;
+  for (let i = 0; i < K; i++) for (let j = 0; j < K; j++) P[i * K + j] = 1 / K + (i - m) * (j - m) / ss;
+  return P;
+}
+function cholesky(A, n) {   // in place lower Cholesky of a flat n x n matrix; false if not positive definite
+  for (let j = 0; j < n; j++) {
+    let s = A[j * n + j]; for (let k = 0; k < j; k++) s -= A[j * n + k] ** 2;
+    if (!(s > 0)) return false; const d = Math.sqrt(s); A[j * n + j] = d;
+    for (let i = j + 1; i < n; i++) { let t = A[i * n + j]; for (let k = 0; k < j; k++) t -= A[i * n + k] * A[j * n + k]; A[i * n + j] = t / d; }
+    for (let k = j + 1; k < n; k++) A[j * n + k] = 0;
+  }
+  return true;
+}
+function cholInv(A, n) {   // inverse of a positive definite matrix (flat), via Cholesky; null if it fails
+  const L = Float64Array.from(A); if (!cholesky(L, n)) return null;
+  const Li = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) { Li[i * n + i] = 1 / L[i * n + i]; for (let j = 0; j < i; j++) { let s = 0; for (let k = j; k < i; k++) s -= L[i * n + k] * Li[k * n + j]; Li[i * n + j] = s / L[i * n + i]; } }
+  const out = new Float64Array(n * n);
+  for (let i = 0; i < n; i++) for (let j = 0; j <= i; j++) { let s = 0; for (let k = i; k < n; k++) s += Li[k * n + i] * Li[k * n + j]; out[i * n + j] = s; out[j * n + i] = s; }
+  return out;
+}
+const FAM = {
+  poisson: { link: m => Math.log(m), inv: e => Math.exp(e), dmu: m => m, V: m => m,
+    dev: (y, m, w) => 2 * w * ((y > 0 ? y * Math.log(y / m) : 0) - (y - m)) },
+  binomial: { link: m => Math.log(m / (1 - m)), inv: e => 1 / (1 + Math.exp(-e)), dmu: m => m * (1 - m), V: m => m * (1 - m),
+    dev: (y, m, w) => 2 * w * ((y > 0 ? y * Math.log(y / m) : 0) + (y < 1 ? (1 - y) * Math.log((1 - y) / (1 - m)) : 0)) },
+  tweedie: { link: m => Math.log(m), inv: e => Math.exp(e), dmu: m => m, V: m => Math.pow(m, 1.5),   // Tweedie, power 1.5
+    dev: (y, m, w) => 2 * w * (-4 * Math.sqrt(y) + 2 * y / Math.sqrt(m) + 2 * Math.sqrt(m)) },
+  gamma: { link: m => Math.log(m), inv: e => Math.exp(e), dmu: m => m, V: m => m * m,
+    dev: (y, m, w) => 2 * w * (-Math.log(y / m) + (y - m) / m) },
+};
+// rows: { x, g, f, v, y, w, off }; groups 0..G-1, flies 0..F-1, videos 0..V-1
+async function gamFit(rows, o) {
+  const fam = FAM[o.family], G = o.G, F = o.F, V = o.V > 1 ? o.V : 0, a = o.a, b = o.b;
+  const nsG = o.nsegG || 17, nsF = o.nsegF || 10, KG = nsG + 3, KF = nsF + 3, q = G * KG + V, n = rows.length;
+  const DG = diffPen(KG), DF = diffPen(KF), PF = nullPen(KF);
+  // basis rows, computed once
+  const gi = new Int32Array(n), gv = new Float64Array(n * 4), fi = new Int32Array(n), fv = new Float64Array(n * 4);
+  rows.forEach((r, i) => { const B = bsRow(r.x, a, b, nsG), C = bsRow(r.x, a, b, nsF); gi[i] = r.g * KG + B.i0; fi[i] = C.i0; for (let k = 0; k < 4; k++) { gv[i * 4 + k] = B.v[k]; fv[i * 4 + k] = C.v[k]; } });
+  const bg = new Float64Array(q), bf = Array.from({ length: F }, () => new Float64Array(KF));
+  // start: each group's spline flat at the group's mean response
+  for (let g = 0; g < G; g++) {
+    let sw = 0, sy = 0; for (const r of rows) if (r.g === g) { sw += r.w; sy += r.w * r.y; }
+    const m0 = Math.min(Math.max(sw ? sy / sw : 0.5, 1e-3), o.family === 'binomial' ? 0.999 : 1e9);
+    let e0 = fam.link(m0); if (o.family === 'poisson') { let so = 0, c = 0; for (const r of rows) if (r.g === g) { so += r.off; c++; } e0 -= c ? so / c : 0; }
+    for (let k = 0; k < KG; k++) bg[g * KG + k] = e0;
+  }
+  const lam = { g: new Float64Array(G).fill(1), fw: 1, fn: 1, v: 1 };
+  const eta = new Float64Array(n), mu = new Float64Array(n);
+  const linpred = (Bg, Bf) => { for (let i = 0; i < n; i++) { const r = rows[i]; let e = r.off || 0; for (let k = 0; k < 4; k++) e += gv[i * 4 + k] * Bg[gi[i] + k] + fv[i * 4 + k] * Bf[r.f][fi[i] + k]; if (V) e += Bg[G * KG + r.v]; eta[i] = Math.min(Math.max(e, -30), 30); mu[i] = fam.inv(eta[i]); if (o.family === 'binomial') mu[i] = Math.min(Math.max(mu[i], 1e-9), 1 - 1e-9); } };
+  const quad = (S, x, off, K) => { let s = 0; for (let i = 0; i < K; i++) { let t = 0; for (let j = 0; j < K; j++) t += S[i * K + j] * x[off + j]; s += x[off + i] * t; } return s; };
+  const penDev = (Bg, Bf) => {
+    linpred(Bg, Bf); let d = 0; for (let i = 0; i < n; i++) d += fam.dev(rows[i].y, mu[i], rows[i].w);
+    for (let g = 0; g < G; g++) d += lam.g[g] * quad(DG, Bg, g * KG, KG);
+    for (let f = 0; f < F; f++) d += lam.fw * quad(DF, Bf[f], 0, KF) + lam.fn * quad(PF, Bf[f], 0, KF);
+    for (let v = 0; v < V; v++) d += lam.v * Bg[G * KG + v] ** 2;
+    return d;
+  };
+  let pd = penDev(bg, bf), it = 0, conv = false, phi = 1, Minv = null, edfG = new Float64Array(G), edf = 0;
+  for (it = 0; it < (o.maxit || 250); it++) {
+    // working weights and response
+    const Hgg = new Float64Array(q * q), rg = new Float64Array(q), Hgf = Array.from({ length: F }, () => new Float64Array(q * KF)), Hff = Array.from({ length: F }, () => new Float64Array(KF * KF)), rf = Array.from({ length: F }, () => new Float64Array(KF));
+    for (let i = 0; i < n; i++) {
+      const r = rows[i], m = mu[i], dm = fam.dmu(m), W = r.w * dm * dm / fam.V(m), z = eta[i] - (r.off || 0) + (r.y - m) / dm;
+      const cg = [gi[i], gi[i] + 1, gi[i] + 2, gi[i] + 3], xg = [gv[i * 4], gv[i * 4 + 1], gv[i * 4 + 2], gv[i * 4 + 3]];
+      if (V) { cg.push(G * KG + r.v); xg.push(1); }
+      const cf = fi[i], xf = [fv[i * 4], fv[i * 4 + 1], fv[i * 4 + 2], fv[i * 4 + 3]], hgf = Hgf[r.f], hff = Hff[r.f], rff = rf[r.f];
+      for (let s1 = 0; s1 < cg.length; s1++) {
+        const ws = W * xg[s1]; rg[cg[s1]] += ws * z;
+        for (let s2 = 0; s2 < cg.length; s2++) Hgg[cg[s1] * q + cg[s2]] += ws * xg[s2];
+        for (let k = 0; k < 4; k++) hgf[cg[s1] * KF + cf + k] += ws * xf[k];
+      }
+      for (let k = 0; k < 4; k++) { const ws = W * xf[k]; rff[cf + k] += ws * z; for (let l = 0; l < 4; l++) hff[(cf + k) * KF + cf + l] += ws * xf[l]; }
+    }
+    for (let g = 0; g < G; g++) for (let i = 0; i < KG; i++) for (let j = 0; j < KG; j++) Hgg[(g * KG + i) * q + g * KG + j] += lam.g[g] * DG[i * KG + j];
+    for (let v = 0; v < V; v++) Hgg[(G * KG + v) * q + G * KG + v] += lam.v;
+    // eliminate the flies (each fly only touches its own block): Schur complement on the global coefficients
+    const M = Float64Array.from(Hgg), rhs = Float64Array.from(rg), Ainv = [], Y = [];
+    for (let f = 0; f < F; f++) {
+      const hff = Hff[f]; for (let i = 0; i < KF * KF; i++) hff[i] += lam.fw * DF[i] + lam.fn * PF[i];
+      const A = cholInv(hff, KF); if (!A) throw new Error('fly block not invertible'); Ainv.push(A);
+      const hgf = Hgf[f], Yf = new Float64Array(KF * q);   // Y = A Hgf'
+      for (let i = 0; i < KF; i++) for (let c = 0; c < q; c++) { let s = 0; for (let k = 0; k < KF; k++) s += A[i * KF + k] * hgf[c * KF + k]; Yf[i * q + c] = s; }
+      Y.push(Yf);
+      for (let c1 = 0; c1 < q; c1++) { let any = false; for (let k = 0; k < KF; k++) if (hgf[c1 * KF + k]) { any = true; break; } if (!any) continue;
+        for (let c2 = 0; c2 < q; c2++) { let s = 0; for (let k = 0; k < KF; k++) s += hgf[c1 * KF + k] * Yf[k * q + c2]; M[c1 * q + c2] -= s; }
+        let s = 0; for (let k = 0; k < KF; k++) { let t = 0; for (let l = 0; l < KF; l++) t += A[k * KF + l] * rf[f][l]; s += hgf[c1 * KF + k] * t; } rhs[c1] -= s; }
+    }
+    Minv = cholInv(M, q); if (!Minv) throw new Error('the model matrix is singular (too few data in a group?)');
+    const nbg = new Float64Array(q); for (let i = 0; i < q; i++) { let s = 0; for (let j = 0; j < q; j++) s += Minv[i * q + j] * rhs[j]; nbg[i] = s; }
+    const nbf = bf.map((_, f) => { const A = Ainv[f], hgf = Hgf[f], t = new Float64Array(KF), out = new Float64Array(KF);
+      for (let k = 0; k < KF; k++) { let s = rf[f][k]; for (let c = 0; c < q; c++) s -= hgf[c * KF + k] * nbg[c]; t[k] = s; }
+      for (let i = 0; i < KF; i++) { let s = 0; for (let k = 0; k < KF; k++) s += A[i * KF + k] * t[k]; out[i] = s; } return out; });
+    // step halving if the penalised deviance goes up
+    let step = 1, npd = penDev(nbg, nbf), tb = nbg, tf = nbf;
+    while (npd > pd + 1e-7 * Math.abs(pd) && step > 1 / 256) {
+      step /= 2; tb = bg.map((x, i) => x + step * (nbg[i] - x)); tf = bf.map((x, f) => x.map((y, i) => y + step * (nbf[f][i] - y))); npd = penDev(tb, tf);
+    }
+    bg.set(tb); tf.forEach((x, f) => bf[f].set(x)); const dpd = Math.abs(pd - npd) / (Math.abs(npd) + 1); pd = npd; linpred(bg, bf);
+    // traces of the inverse times each penalty, effective degrees of freedom and scale
+    let trG = new Float64Array(G), trV = 0, trFW = 0, trFN = 0;
+    for (let g = 0; g < G; g++) { let s = 0; for (let i = 0; i < KG; i++) for (let j = 0; j < KG; j++) s += Minv[(g * KG + i) * q + g * KG + j] * DG[j * KG + i]; trG[g] = s; }
+    for (let v = 0; v < V; v++) trV += Minv[(G * KG + v) * q + G * KG + v];
+    for (let f = 0; f < F; f++) {
+      const A = Ainv[f], Yf = Y[f], Hi = Float64Array.from(A), T = new Float64Array(KF * q);
+      for (let i = 0; i < KF; i++) for (let c = 0; c < q; c++) { if (!Yf[i * q + c] && true) { /* sparse rows are common */ } let s = 0; for (let d = 0; d < q; d++) { const y = Yf[i * q + d]; if (y) s += y * Minv[d * q + c]; } T[i * q + c] = s; }
+      for (let i = 0; i < KF; i++) for (let j = 0; j < KF; j++) { let s = 0; for (let c = 0; c < q; c++) { const y = Yf[j * q + c]; if (y) s += T[i * q + c] * y; } Hi[i * KF + j] += s; }
+      for (let i = 0; i < KF; i++) for (let j = 0; j < KF; j++) { trFW += Hi[i * KF + j] * DF[j * KF + i]; trFN += Hi[i * KF + j] * PF[j * KF + i]; }
+    }
+    let trPen = trV * lam.v + lam.fw * trFW + lam.fn * trFN; for (let g = 0; g < G; g++) { trPen += lam.g[g] * trG[g]; edfG[g] = KG - lam.g[g] * trG[g]; }
+    edf = q + F * KF - trPen;
+    let pear = 0; for (let i = 0; i < n; i++) pear += rows[i].w * (rows[i].y - mu[i]) ** 2 / fam.V(mu[i]);
+    phi = pear / Math.max(1, n - edf);
+    // Fellner-Schall update of the smoothing parameters
+    const upd = (l, r, tr, bSb) => { const num = r - l * tr; return Math.min(1e10, Math.max(1e-8, bSb > 1e-12 && num > 1e-6 ? phi * num / bSb : l * 10)); };
+    let maxch = 0; const ch = (o1, n1) => { maxch = Math.max(maxch, Math.abs(Math.log(n1 / o1))); return n1; };
+    if (it >= 2) {
+      for (let g = 0; g < G; g++) lam.g[g] = ch(lam.g[g], upd(lam.g[g], KG - 2, trG[g], quad(DG, bg, g * KG, KG)));
+      let sW = 0, sN = 0; for (let f = 0; f < F; f++) { sW += quad(DF, bf[f], 0, KF); sN += quad(PF, bf[f], 0, KF); }
+      lam.fw = ch(lam.fw, upd(lam.fw, F * (KF - 2), trFW, sW)); lam.fn = ch(lam.fn, upd(lam.fn, F * 2, trFN, sN));
+      if (V) { let s = 0; for (let v = 0; v < V; v++) s += bg[G * KG + v] ** 2; lam.v = ch(lam.v, upd(lam.v, V, trV, s)); }
+      pd = penDev(bg, bf);   // the criterion changes with the smoothing parameters
+      if (maxch < 0.005 && dpd < 1e-6) { conv = true; break; }
+    } else maxch = 1;
+    if (o.onProgress && it % 5 === 0) { o.onProgress(it); await new Promise(r => setTimeout(r, 0)); }
+  }
+  let dev = 0, nd = 0, sw = 0, sy = 0; for (let i = 0; i < n; i++) { dev += fam.dev(rows[i].y, mu[i], rows[i].w); sw += rows[i].w; sy += rows[i].w * rows[i].y / (o.family === 'poisson' ? Math.exp(rows[i].off || 0) : 1); }
+  const m0 = sy / sw; for (let i = 0; i < n; i++) nd += fam.dev(rows[i].y, o.family === 'poisson' ? m0 * Math.exp(rows[i].off || 0) : Math.min(Math.max(m0, 1e-9), 1 - 1e-9), rows[i].w);
+  const qg = G * KG, Vg = new Float64Array(qg * qg); for (let i = 0; i < qg; i++) for (let j = 0; j < qg; j++) Vg[i * qg + j] = phi * Minv[i * q + j];
+  return { fam, G, KG, a, b, nsG, dfFly: F - G, beta: bg.slice(0, qg), Vg, phi, edfG: Array.from(edfG), edf, lam, it, conv, devExpl: 1 - dev / nd, n };
+}
+// random draws of the group curves (link scale coefficients), reproducible
+function mulberry(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function gamDraws(fit, nd) {
+  const qg = fit.G * fit.KG, L = Float64Array.from(fit.Vg);
+  for (let i = 0; i < qg; i++) L[i * qg + i] += 1e-10;
+  if (!cholesky(L, qg)) throw new Error('posterior covariance not positive definite');
+  const rnd = mulberry(12345), gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const out = [];
+  // multivariate t with (flies - groups) degrees of freedom: the curves' uncertainty rests on a few flies per group
+  const df = Math.max(3, fit.dfFly || 30);
+  for (let d = 0; d < nd; d++) {
+    let c2 = 0; for (let k = 0; k < df; k++) c2 += gauss() ** 2; const sc = Math.sqrt(df / c2);
+    const z = Array.from({ length: qg }, gauss), b = Float64Array.from(fit.beta); for (let i = 0; i < qg; i++) { let s = 0; for (let k = 0; k <= i; k++) s += L[i * qg + k] * z[k]; b[i] += sc * s; } out.push(b);
+  }
+  return out;
+}
+// curve of group g on a grid for coefficient vector b (response scale)
+function gamCurve(fit, b, g, xs) { return xs.map(x => { const B = bsRow(x, fit.a, fit.b, fit.nsG); let e = 0; for (let k = 0; k < 4; k++) e += B.v[k] * b[g * fit.KG + B.i0 + k]; return fit.fam.inv(e); }); }
+// features of a curve: baseline, rise, peak, steepest drop, fall to half the peak, breadth
+function curveFeatures(xs, f) {
+  const n = xs.length, h = xs[1] - xs[0], nb = Math.max(2, Math.round(0.5 / h));
+  let base = 0; for (let i = 0; i < Math.min(nb, n); i++) base += f[i]; base /= Math.min(nb, n);
+  let ip = 0; for (let i = 1; i < n; i++) if (f[i] > f[ip]) ip = i;
+  const P = f[ip], A = P - base, out = { base, peak: P, Tpeak: ip > 0 && ip < n - 1 ? xs[ip] : NaN, rise10: NaN, rise50: NaN, Tsteep: NaN, drop50: NaN, breadth: NaN };
+  if (A > 0.15 * Math.abs(P) && ip > 0) {
+    for (let i = 0; i <= ip; i++) if (f[i] >= base + 0.1 * A) { out.rise10 = i ? xs[i - 1] + h * (base + 0.1 * A - f[i - 1]) / (f[i] - f[i - 1]) : NaN; break; }
+    for (let i = 0; i <= ip; i++) if (f[i] >= base + 0.5 * A) { out.rise50 = i ? xs[i - 1] + h * (base + 0.5 * A - f[i - 1]) / (f[i] - f[i - 1]) : NaN; break; }
+  }
+  if (ip < n - 2) {
+    let is = -1, md = 0; for (let i = ip; i < n - 1; i++) { const d = f[i + 1] - f[i]; if (d < md) { md = d; is = i; } }
+    if (is >= 0 && is < n - 2) out.Tsteep = xs[is] + h / 2;
+    for (let i = ip + 1; i < n; i++) if (f[i] <= 0.5 * P) { out.drop50 = xs[i - 1] + h * (0.5 * P - f[i - 1]) / (f[i] - f[i - 1]); break; }
+  }
+  if (fin(out.rise50) && fin(out.drop50)) out.breadth = out.drop50 - out.rise50;
+  return out;
+}
+/* curve analysis with a GAM: one smooth per group, one per fly, video as a random effect */
+function bandChart(svg, series, o) {
+  const W = svg.clientWidth, H = svg.clientHeight; if (!W || !H) return;
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  const pts = series.flatMap(sr => sr.pts); if (!pts.length) { svg.innerHTML = '<text x="12" y="24" fill="currentColor">Nothing to draw.</text>'; return; }
+  const x0 = Math.min(...pts.map(p => p[0])), x1 = Math.max(...pts.map(p => p[0]));
+  let y0 = o.zero ? Math.min(0, ...pts.map(p => p[2])) : 0, y1 = Math.max(...pts.map(p => p[3])); if (o.zero) y1 = Math.max(0, y1);
+  const pad = (y1 - y0) * 0.04 || 1; y1 += pad; if (o.zero) y0 -= pad;
+  const pl = 56, pr = series.length > 1 || o.legend ? 190 : 14, pt = 14, pb = 38, pw = W - pl - pr, ph = H - pt - pb;
+  const X = v => pl + (x1 > x0 ? (v - x0) / (x1 - x0) : 0.5) * pw, Y = v => pt + ph - (v - y0) / (y1 - y0) * ph;
+  const yt = axisTicks(y0, y1, 5), xt = axisTicks(x0, x1, W < 520 ? 4 : 8);
+  let h = '<g stroke="var(--line)">' + yt.map(v => '<line x1="' + pl + '" x2="' + (pl + pw) + '" y1="' + Y(v) + '" y2="' + Y(v) + '"/>').join('') + '</g>' +
+    (o.zero ? '<line x1="' + pl + '" x2="' + (pl + pw) + '" y1="' + Y(0) + '" y2="' + Y(0) + '" stroke="var(--ink)" stroke-dasharray="4 3"/>' : '') +
+    '<g fill="var(--mut)" font-size="12" text-anchor="end">' + yt.map(v => '<text x="' + (pl - 6) + '" y="' + (Y(v) + 4) + '">' + (+v.toFixed(2)) + '</text>').join('') + '</g>' +
+    '<text transform="translate(13 ' + (pt + ph / 2) + ') rotate(-90)" fill="var(--mut)" font-size="12" text-anchor="middle">' + esc(o.ylab) + '</text>' +
+    '<g fill="var(--mut)" font-size="12" text-anchor="middle">' + xt.map(v => '<text x="' + X(v) + '" y="' + (pt + ph + 18) + '">' + (+v.toFixed(1)) + '</text>').join('') + '<text x="' + (pl + pw / 2) + '" y="' + (H - 3) + '">' + esc(o.xlab) + '</text></g>';
+  series.forEach((sr, i) => {
+    const P = sr.pts, cl = sr.color;
+    h += '<path d="' + P.map((p, j) => (j ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[3]).toFixed(1)).join('') + P.slice().reverse().map(p => 'L' + X(p[0]).toFixed(1) + ' ' + Y(p[2]).toFixed(1)).join('') + 'Z" fill="' + cl + '" fill-opacity=".16" stroke="none"/>';
+    h += '<path d="' + P.map((p, j) => (j ? 'L' : 'M') + X(p[0]).toFixed(1) + ' ' + Y(p[1]).toFixed(1)).join('') + '" fill="none" stroke="' + cl + '" stroke-width="2.2"/>';
+    for (let j = 0; j < P.length; j += 6) { const p = P[j]; h += '<circle cx="' + X(p[0]).toFixed(1) + '" cy="' + Y(p[1]).toFixed(1) + '" r="5" fill="transparent"><title>' + esc(sr.k) + ' at ' + p[0].toFixed(1) + ' °C: ' + o.fmt(p[1]) + ' (' + o.fmt(p[2]) + ' to ' + o.fmt(p[3]) + ')</title></circle>'; }
+    if (series.length > 1 || o.legend) h += '<g transform="translate(' + (pl + pw + 14) + ' ' + (pt + 8 + i * 20) + ')"><line x1="0" x2="22" y1="0" y2="0" stroke="' + cl + '" stroke-width="2.2"/><text x="28" y="4" font-size="12" fill="var(--ink)">' + esc(sr.k) + '</text></g>';
+  });
+  svg.innerHTML = h;
+}
+const GAMM = {
+  act: { family: 'tweedie', what: 'activity', unit: 'BL/min', ylab: 'body lengths per min', sc: 1, fmt: v => v.toFixed(1), fam: 'Tweedie (power 1.5), log link; response: body lengths walked per minute' },
+  pct: { family: 'binomial', what: '% of time walking', unit: '%', ylab: '% of time walking', sc: 100, fmt: v => v.toFixed(1), fam: 'binomial (with over-dispersion), logit link; response: walking seconds out of the seconds with a position' },
+  spd: { family: 'gamma', what: 'walking speed', unit: 'BL/s', ylab: 'body lengths per s, while walking', sc: 1, fmt: v => v.toFixed(2), fam: 'Gamma, log link; response: mean speed over the walking seconds, weighted by their number' },
+};
+const FEATS = [
+  ['base', 'Level at the start', 'y', 'mean of the curve over its first 0.5 °C'],
+  ['rise10', 'Onset of the rise', 'T', 'where the curve has risen 10 % of the way from the start level to the peak'],
+  ['rise50', 'Half rise', 'T', 'where it has risen 50 % of the way to the peak'],
+  ['Tpeak', 'Peak temperature', 'T', 'where the curve is highest (not given if the highest point is at either end)'],
+  ['peak', 'Peak level', 'y', 'height of the curve at its peak'],
+  ['Tsteep', 'Steepest fall', 'T', 'where the curve falls fastest after the peak'],
+  ['drop50', 'Fall to half the peak', 'T', 'where the curve, after the peak, falls below half the peak level'],
+  ['breadth', 'Breadth', 'dT', 'from the half rise to the fall to half the peak (°C)'],
+];
+function gamRows(key, fl) {
+  const out = [];
+  fl.forEach((f, fi) => { for (const [T, d, nV, nW] of f.bins) {
+    if (!fin(T) || !(nV >= 20)) continue;
+    if (key === 'act') { if (fin(d) && d >= 0) out.push({ fly: fi, x: T, y: d, w: 1, off: Math.log(nV / 60) }); }
+    else if (key === 'pct') { if (fin(nW)) out.push({ fly: fi, x: T, y: Math.min(1, Math.max(0, nW / nV)), w: nV, off: 0 }); }
+    else if (nW >= 3 && d > 0) out.push({ fly: fi, x: T, y: d / nW, w: nW, off: 0 });
+  } });
+  return out;
+}
+const qtl = (s, p) => s.length ? s[Math.min(s.length - 1, Math.max(0, Math.floor(p * s.length)))] : NaN;
+const ciTxt = (est, s, fmt, frac) => frac < 0.8 ? (fin(est) ? '<span title="defined in only ' + Math.round(frac * 100) + ' % of the draws">' + fmt(est) + ' (uncertain)</span>' : '<span class="mut">not reached</span>') : fmt(est) + ' <span class="mut">(' + fmt(qtl(s, 0.025)) + ' to ' + fmt(qtl(s, 0.975)) + ')</span>';
+async function gamReport(key, fl, factors0, focus0, block0, out) {
+  const M = GAMM[key], { factors, focus, block } = prepModel(fl.map(f => ({ F: f.F })), factors0, focus0, block0);
+  const rowsAll = gamRows(key, fl), byFly = new Map();
+  for (const r of rowsAll) { if (!byFly.has(r.fly)) byFly.set(r.fly, []); byFly.get(r.fly).push(r); }
+  const gname = i => cellName(fl[i].F, factors);
+  let flies = [...byFly.keys()].filter(i => byFly.get(i).length >= 3);
+  const cnt = {}; flies.forEach(i => { cnt[gname(i)] = (cnt[gname(i)] || 0) + 1; });
+  const dropped = Object.keys(cnt).filter(g => cnt[g] < 3); flies = flies.filter(i => cnt[gname(i)] >= 3);
+  const groups = [...new Set(flies.map(gname))].sort();
+  if (!groups.length) return '<p class="mut">Not enough data: each group needs at least 3 flies with 3 or more one-minute bins.</p>';
+  const vids = block ? [...new Set(flies.map(i => fl[i].F.__b))].sort() : [];
+  const rows = [], fmin = [], fmax = [], fg = [];
+  flies.forEach((i, fi) => { const g = groups.indexOf(gname(i)); fg.push(g); let lo = Infinity, hi = -Infinity;
+    for (const r of byFly.get(i)) { rows.push({ x: r.x, y: r.y, w: r.w, off: r.off, g, f: fi, v: block ? vids.indexOf(fl[i].F.__b) : 0 }); lo = Math.min(lo, r.x); hi = Math.max(hi, r.x); }
+    fmin.push(lo); fmax.push(hi); });
+  const a = Math.min(...fmin), b = Math.max(...fmax);
+  if (b - a < 1) return '<p class="mut">The flies’ data cover only ' + a.toFixed(1) + ' to ' + b.toFixed(1) + ' °C (one-minute bins, each fly’s last minute before knockdown left out). A curve needs at least 1 °C, and its shape (rise, peak, fall) needs a recording that starts well below the temperatures of interest.</p>';
+  const fit = await gamFit(rows, { family: M.family, G: groups.length, F: flies.length, V: vids.length, a, b, onProgress: it => { out.innerHTML = '<p class="mut">Fitting the curves… (iteration ' + it + ')</p>'; } });
+  out.innerHTML = '<p class="mut">Comparing the curves…</p>'; await new Promise(r => setTimeout(r, 0));
+  const ND = 2000, D = gamDraws(fit, ND), NG = 240, col = k => PAL[groups.indexOf(k) % PAL.length];
+  // each group's curve only where at least max(3, 30 %) of its flies still have data
+  const G = groups.map((k, gi) => {
+    const lo = fmin.filter((_, fi) => fg[fi] === gi).sort((x, y) => x - y), hi = fmax.filter((_, fi) => fg[fi] === gi).sort((x, y) => y - x), m = Math.max(3, Math.ceil(0.3 * lo.length));
+    const L = lo[Math.min(m, lo.length) - 1], H = hi[Math.min(m, hi.length) - 1], xs = Array.from({ length: NG }, (_, i) => L + (H - L) * i / (NG - 1));
+    const est = gamCurve(fit, fit.beta, gi, xs).map(v => v * M.sc), dr = D.map(bb => gamCurve(fit, bb, gi, xs).map(v => v * M.sc));
+    const band = xs.map((x, i) => { const s = dr.map(c => c[i]).sort((p, q) => p - q); return [x, est[i], qtl(s, 0.025), qtl(s, 0.975)]; });
+    return { k, gi, L, H, xs, est, dr, band, fe: curveFeatures(xs, est), fd: dr.map(c => curveFeatures(xs, c)), n: lo.length };
+  });
+  // pairs along the focus factor, within each combination of the other factors
+  const others = factors.filter(f => f !== focus), pairs = [];
+  if (focus) {
+    const fOf = k => fl[flies.find(i => gname(i) === k)].F;
+    const combos = [...new Set(groups.map(k => others.map(f => fOf(k)[f]).join(' · ')))];
+    for (const cb of combos) {
+      const gs = groups.filter(k => others.map(f => fOf(k)[f]).join(' · ') === cb).sort((p, q) => fOf(p)[focus] < fOf(q)[focus] ? -1 : 1);
+      for (let i = 0; i < gs.length; i++) for (let j = i + 1; j < gs.length; j++) pairs.push({ A: G[groups.indexOf(gs[j])], B: G[groups.indexOf(gs[i])], a: fOf(gs[j])[focus], b: fOf(gs[i])[focus], within: cb || 'all flies' });
+    }
+  }
+  // difference curves with a 95 % simultaneous band
+  for (const P of pairs) {
+    const L = Math.max(P.A.L, P.B.L), H = Math.min(P.A.H, P.B.H); P.diff = null; if (H - L < 0.5) continue;
+    const xs = Array.from({ length: NG }, (_, i) => L + (H - L) * i / (NG - 1)), dd = D.map(bb => { const ca = gamCurve(fit, bb, P.A.gi, xs), cb = gamCurve(fit, bb, P.B.gi, xs); return ca.map((v, i) => (v - cb[i]) * M.sc); });
+    const m = xs.map((_, i) => dd.reduce((s, c) => s + c[i], 0) / ND), sd = xs.map((_, i) => Math.sqrt(dd.reduce((s, c) => s + (c[i] - m[i]) ** 2, 0) / (ND - 1)) || 1e-12);
+    const c = qtl(dd.map(cv => Math.max(...cv.map((v, i) => Math.abs(v - m[i]) / sd[i]))).sort((p, q) => p - q), 0.95);
+    const pts = xs.map((x, i) => [x, m[i], m[i] - c * sd[i], m[i] + c * sd[i]]), regions = []; let st = null;
+    pts.forEach((p, i) => { const out0 = p[2] > 0 || p[3] < 0; if (out0 && st == null) st = i; if ((!out0 || i === pts.length - 1) && st != null) { regions.push([pts[st][0], pts[out0 ? i : i - 1][0], pts[st][1] > 0 ? P.a : P.b]); st = null; } });
+    P.diff = { pts, regions };
+  }
+  // feature differences from the draws
+  const ftab = FEATS.map(([fk]) => pairs.map(P => {
+    const d = []; for (let i = 0; i < ND; i++) { const x = P.A.fd[i][fk] - P.B.fd[i][fk]; if (fin(x)) d.push(x); }
+    d.sort((p, q) => p - q); const frac = d.length / ND, pos = d.filter(x => x > 0).length / Math.max(1, d.length);
+    return { est: P.A.fe[fk] - P.B.fe[fk], d, frac, p: d.length ? Math.min(1, 2 * Math.min(pos, 1 - pos) + 1 / ND) : NaN };
+  }));
+  ftab.forEach(row => { const adj = holm(row.map(r => r.frac >= 0.8 ? r.p : NaN)); row.forEach((r, i) => { r.padj = adj[i]; }); });
+  // report
+  const fmtF = t => t === 'y' ? M.fmt : v => v.toFixed(2);
+  let h = '<p class="stModel">GAM: ' + esc(M.what) + ' ~ a smooth curve of temperature for each group' + (factors.length ? ' (' + factors.map(f => FN[f]).join(' × ') + ')' : '') + ' + a smooth curve for each fly' + (block ? ' + video' : '') + '. ' + esc(M.fam) + '. ' +
+    flies.length + ' flies, ' + rows.length + ' one-minute bins; deviance explained ' + Math.round(100 * fit.devExpl) + ' %; effective degrees of freedom of the group curves ' + fit.edfG.map(x => x.toFixed(1)).join(', ') + '.' +
+    (fit.conv ? '' : ' <b>The fit did not fully converge (' + fit.it + ' iterations): treat the results with caution.</b>') + '</p>';
+  if (dropped.length) h += '<p class="warn">Left out (fewer than 3 flies with data): ' + esc(dropped.join(', ')) + '.</p>';
+  h += '<h4>Fitted curves: a typical fly of each group, with 95 % intervals</h4><div class="fig chart"><svg class="gamCurves" role="img" aria-label="Fitted curves"></svg></div>';
+  h += '<h4>Features of the curves (estimate and 95 % interval)</h4><div class="scroll"><table class="stTbl"><thead><tr><th>Feature</th>' + G.map(g => '<th style="color:' + col(g.k) + '">' + esc(g.k) + '</th>').join('') + '</tr></thead><tbody>' +
+    FEATS.map(([fk, name, t, desc]) => '<tr><td title="' + esc(desc) + '">' + name + (t === 'y' ? ' (' + esc(M.unit) + ')' : ' (°C)') + '</td>' + G.map(g => { const s = g.fd.map(f => f[fk]).filter(fin).sort((p, q) => p - q); return '<td>' + ciTxt(g.fe[fk], s, fmtF(t), s.length / ND) + '</td>'; }).join('') + '</tr>').join('') + '</tbody></table></div>';
+  if (pairs.length) {
+    h += '<h4>Differences between groups</h4><div class="fig chart"><svg class="gamDiff" role="img" aria-label="Differences between fitted curves"></svg></div>';
+    h += '<p class="mut">Each line is the difference between two fitted curves, with a 95 % simultaneous band (it covers the whole curve at once). Where the band leaves zero, the curves differ: ' +
+      (pairs.map(P => !P.diff ? null : P.a + ' vs ' + P.b + (P.within !== 'all flies' ? ' (' + P.within + ')' : '') + ': ' + (P.diff.regions.length ? P.diff.regions.map(r => r[0].toFixed(1) + '–' + r[1].toFixed(1) + ' °C (' + r[2] + ' higher)').join(', ') : 'nowhere')).filter(Boolean).map(esc).join('; ') || '–') + '.</p>';
+    h += '<div class="scroll"><table class="stTbl"><thead><tr><th>Feature</th><th>Difference</th><th>Within</th><th class="n">Estimate (95 % interval)</th><th class="n">p (Holm)</th></tr></thead><tbody>' +
+      FEATS.map(([fk, name, t], fi) => pairs.map((P, pi) => { const r = ftab[fi][pi], f = fmtF(t), u = t === 'y' ? ' ' + M.unit : ' °C';
+        return '<tr' + (r.padj < 0.05 ? ' class="sig"' : '') + '><td>' + (pi ? '' : name) + '</td><td>' + esc(P.a) + ' − ' + esc(P.b) + '</td><td>' + esc(P.within) + '</td><td class="n">' +
+          (r.frac < 0.8 ? '<span class="mut">not estimable</span>' : (r.est > 0 ? '+' : '') + f(r.est) + u + ' <span class="mut">(' + f(qtl(r.d, 0.025)) + ' to ' + f(qtl(r.d, 0.975)) + ')</span>') + '</td><td class="n">' + (r.frac < 0.8 ? '–' : fmtP(r.padj)) + '</td></tr>'; }).join('')).join('') + '</tbody></table></div>';
+  }
+  h += '<p class="mut">How to read this: the curves are for a typical fly of each group (the curve of each fly is fitted too, and its own deviations removed), so flies, not minutes, are the unit compared. A curve stops where fewer than 30 % of its group’s flies (at least 3) are still standing, and each fly’s last minute before knockdown is left out. Intervals and p-values come from 2000 random draws of the fitted curves; p-values are adjusted (Holm) across the comparisons of each feature. Hover a feature name for its definition.</p>';
+  return { html: h, after: el => {
+    bandChart(el.querySelector('.gamCurves'), G.map(g => ({ k: g.k + ' (' + g.n + ')', color: col(g.k), pts: g.band })), { xlab: '°C (smoothed ramp)', ylab: M.ylab, fmt: M.fmt });
+    const dv = pairs.filter(P => P.diff); if (dv.length) bandChart(el.querySelector('.gamDiff'), dv.map((P, i) => ({ k: P.a + ' − ' + P.b + (P.within !== 'all flies' ? ' · ' + P.within : ''), color: PAL[i % PAL.length], pts: P.diff.pts })), { xlab: '°C (smoothed ramp)', ylab: 'difference, ' + M.ylab, fmt: M.fmt, zero: true, legend: true });
+  } };
+}
+// one-minute bins of a fly from the start of the activity analysis: [temperature, body lengths walked, seconds with a position, walking seconds, bin end (video s)]
+function minuteBins(w) {
+  const out = [];
+  for (let c = Math.max(0, Math.ceil(ACT.ts - ACT.t0)); c + 60 <= w.sp.length; c += 60) {
+    let nV = 0, nW = 0, d = 0; for (let u = c; u < c + 60; u++) { const v = w.sp[u]; if (v === v) { nV++; if (v > 0) { nW++; d += v; } } }
+    const T = tempSm(ACT.t0 + c + 30); if (fin(T)) out.push([+T.toFixed(3), +d.toFixed(2), nV, nW, ACT.t0 + c + 60]);
+  }
+  return out;
+}
+const binsSig = fl => fl.map(f => [f.F, f.bins.length, Math.round(f.bins.reduce((s, r) => s + (r[1] || 0) + (r[3] || 0), 0))]);
 const ST = {};
 const sigOf = x => JSON.stringify(x, (k, v) => typeof v === 'number' ? +v.toFixed(4) : v);
-document.addEventListener('click', e => {
-  const b = e.target.closest('.stRun'); if (!b) return;
-  const box = b.closest('.stbox'), r = ST[box.dataset.st]();
-  try { box.querySelector('.stOut').innerHTML = r.html(); box.dataset.sig = r.sig; } catch (err) { console.error(err); box.querySelector('.stOut').innerHTML = '<p class="mut">The statistics could not be computed: ' + esc(err.message || err) + '</p>'; }
+document.addEventListener('click', async e => {
+  const b = e.target.closest('.stRun'); if (!b || b.disabled) return;
+  const box = b.closest('.stbox'), out = box.querySelector('.stOut'), r = ST[box.dataset.st](); b.disabled = true;
+  try {
+    let h = r.html(out); if (h && h.then) { out.innerHTML = '<p class="mut">Working…</p>'; h = await h; }
+    if (typeof h === 'string') out.innerHTML = h; else { out.innerHTML = h.html; if (h.after) h.after(out); }
+    box.dataset.sig = r.sig;
+  } catch (err) { console.error(err); out.innerHTML = '<p class="mut">The statistics could not be computed: ' + esc(err.message || err) + '</p>'; }
+  finally { b.disabled = false; }
 });
 function staleStats(scope) {
   for (const box of scope.querySelectorAll('.stbox[data-sig]')) {
@@ -2165,25 +2474,10 @@ const MEAS = {
   pct: { what: '% of time walking', unit: () => '%', fmt: v => v.toFixed(1) },
   spd: { what: 'walking speed', unit: () => 'BL/s', fmt: v => v.toFixed(2) },
 };
-const LW = 20, LCUT = 60;   // per-fly lines: 20-s windows, the last minute before knockdown left out
-// 20-s windows of one fly: [temperature, activity (BL/min), % walking, walking speed (BL/s), window end (video s)]
-function fineWins(w) {
-  const out = [];
-  for (let c = Math.ceil(ACT.ts - ACT.t0); c + LW <= w.sp.length; c += LW) {
-    const T = tempSm(ACT.t0 + c + LW / 2); if (!fin(T)) continue;
-    out.push([T, actWin(w.sp, c, c + LW), pctWin(w.sp, c, c + LW), spdWin(w.sp, c, c + LW), ACT.t0 + c + LW]);
-  }
-  return out;
-}
-const FI = { act: 1, pct: 2, spd: 3 };
-function linePts(wins, kdT, key, tf) { const cut = fin(kdT) ? kdT - LCUT : Infinity; return wins.filter(r => r[4] <= cut && fin(r[0]) && fin(r[FI[key]])).map(r => [r[0], tf(r[FI[key]])]); }
-function actLineFlies(key) {
-  const fs = actFs();
-  return ACT.wells.filter(w => w.status !== 'never').map(w => ({ F: labF(labelOf(w.id), fs), pts: linePts(fineWins(w), w.kd, key, key === 'act' ? actTf : v => v) }));
-}
+const actGamFlies = () => { const fs = actFs(); return ACT.wells.filter(w => w.status !== 'never').map(w => ({ F: labF(labelOf(w.id), fs), bins: minuteBins(w).filter(r => !(fin(w.kd) && r[4] > w.kd - 60)) })); };
 for (const key of ['act', 'pct', 'spd']) ST['a_' + key] = () => {
-  const fl = ACT ? actLineFlies(key) : [], fs = ACT ? actFs() : [], m = MEAS[key];
-  return { sig: sigOf([key, fs, fl]), html: () => lineReport(fl, fs, actFocus(fs), false, { what: m.what, unit: m.unit(), fmt: m.fmt, binWord: '20-s windows' }) };
+  const fs = ACT ? actFs() : [], fl = ACT ? actGamFlies() : [];
+  return { sig: sigOf([key, fs, binsSig(fl)]), html: out => gamReport(key, fl, fs, actFocus(fs), false, out) };
 };
 ST.aAl = () => {
   const fs = ACT ? actFs() : [], items1 = [], items2 = [];
@@ -2215,27 +2509,22 @@ ST.aPf = () => {
   return { sig: sigOf([metric, lo, hi, fs, items]), html: () => (win && fin(hi) ? windowNote(kd, lo, hi, kd.length) : '') + lmReport(items, fs, actFocus(fs), false, { what: M.what, unit: M.act ? MEAS.act.unit() : M.unit, fmt: M.fmt || (M.act ? MEAS.act.fmt : v => v.toFixed(2)) }) };
 };
 /* combined view: per-fly values and the curves, from the stored bins */
-function combLineFlies(key, fs) {
-  const LOG = $('#cLog').value === 'log', out = [], tf = key === 'act' && LOG ? v => Math.log2(1 + v) : v => v;
-  for (const d of COMB.sets) {
-    if (d.fine && d.fine.length) { for (const f of d.fine) { const fl = d.flies.find(x => x.well === f.well) || {}; out.push({ F: labF(lbl(fl.well ? fl : f, d.video), fs, true), pts: linePts(f.w, fl.status === 'kd' ? fl.kdT : null, key, tf) }); } continue; }
-    const byWell = {}; for (const r of d.act) (byWell[r.well] = byWell[r.well] || []).push(r);
-    for (const w in byWell) {
-      const fl = d.flies.find(f => f.well === w); if (fl && fl.status === 'never') continue;
-      const cut = fl && fl.status === 'kd' && fin(fl.kdT) ? fl.kdT - LCUT : null, pts = [];
-      for (const r of byWell[w]) {
-        if (cut != null && fin(r.t) && fin(r.bin) ? r.t + r.bin > cut : !r.standing) continue;
-        const y = key === 'act' ? (fin(r.perMin) ? (LOG ? Math.log2(1 + r.perMin) : r.perMin) : NaN) : r[key];
-        if (fin(r.tmid) && fin(y)) pts.push([r.tmid, y]);
-      }
-      out.push({ F: labF(lbl(byWell[w][0], d.video), fs, true), pts });
-    }
-  }
-  return out;
+// one-minute (or CSV) bins of each fly of a stored video: [T, body lengths, seconds with a position, walking seconds, bin end]
+function setBins(d, cutLast) {
+  const flyOf = w => d.flies.find(x => x.well === w) || {};
+  const cutOf = f => cutLast && f.status === 'kd' && fin(f.kdT) ? f.kdT - 60 : Infinity;
+  if (d.mins && d.mins.length) return d.mins.map(m => { const f = flyOf(m.well); if (f.status === 'never') return null; const c = cutOf(f), kd = f.status === 'kd' && fin(f.kdT) ? f.kdT : Infinity;
+    return { L: lbl(f.well ? f : m, d.video), bins: m.b.filter(r => r[4] <= Math.min(c, kd)) }; }).filter(Boolean);
+  const byWell = {}; for (const r of d.act) (byWell[r.well] = byWell[r.well] || []).push(r);
+  return Object.keys(byWell).map(w => { const f = flyOf(w); if (f.status === 'never') return null; const c = cutOf(f);
+    const bins = byWell[w].filter(r => fin(r.t) && fin(r.bin) && fin(f.kdT) ? r.t + r.bin <= Math.min(c, f.kdT) : r.standing).map(r => {
+      const nV = fin(r.nV) ? r.nV : fin(r.bin) ? r.bin : 60, nW = fin(r.nW) ? r.nW : fin(r.pct) ? r.pct / 100 * nV : NaN;
+      return [r.tmid, fin(r.perMin) ? r.perMin * nV / 60 : NaN, nV, nW, fin(r.t) && fin(r.bin) ? r.t + r.bin : NaN]; });
+    return { L: lbl(byWell[w][0], d.video), bins }; }).filter(Boolean);
 }
 for (const key of ['act', 'pct', 'spd']) ST['c_' + key] = () => {
-  const fs = facOf($('#cX').value, $('#cC').value), fl = combLineFlies(key, fs), m = MEAS[key], LOG = $('#cLog').value === 'log';
-  return { sig: sigOf([key, LOG, fs, fl]), html: () => lineReport(fl, fs, $('#cX').value, cBlock(), { what: m.what, unit: key === 'act' ? (LOG ? 'log2 units' : 'BL/min') : m.unit(), fmt: key === 'act' ? (v => v.toFixed(LOG ? 2 : 1)) : m.fmt, binWord: COMB.sets.every(d => d.fine && d.fine.length) ? '20-s windows' : 'windows (bins of the activity CSV for loaded files)' }) };
+  const fs = facOf($('#cX').value, $('#cC').value), fl = COMB.sets.flatMap(d => setBins(d, true).map(f => ({ F: labF(f.L, fs, true), bins: f.bins })));
+  return { sig: sigOf([key, fs, binsSig(fl)]), html: out => gamReport(key, fl, fs, $('#cX').value, cBlock(), out) };
 };
 ST.cPf = () => {
   const fs = facOf($('#cX').value, $('#cC').value), metric = $('#cMetric').value, LOG = $('#cLog').value === 'log', M = PFM[metric === 'tpeak' ? 'tpeak' : metric], items = [], kd = [];
@@ -2251,7 +2540,7 @@ ST.cPf = () => {
 
 /* ---------- start ---------- */
 syncSetupInputs(); setPhase('empty');
-window.__kd = { S, eff, rowsOut, resultsMatrix, activityMatrix, OCR, analyse, selectWell, computeActivity, readAct };
+window.__kd = { S, eff, rowsOut, resultsMatrix, activityMatrix, OCR, analyse, selectWell, computeActivity, readAct, actGamFlies: () => actGamFlies(), ACT: () => ACT };
 }
 </script>
 </body>
